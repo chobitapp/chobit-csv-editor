@@ -1,6 +1,6 @@
 import { useState } from "react";
 import "../src/styles.css";
-import { CsvEditor, type OutputEncoding, stringifyCsv, useCsvEditor } from "../src";
+import { CsvEditor, type OutputEncoding, stringifyCsv, UnencodableCharacterError, useCsvEditor } from "../src";
 
 const sample = `名前,住所,メモ
 山田太郎,東京都千代田区,"1行目
@@ -20,12 +20,23 @@ export function App() {
 		const result = await editor.load(file);
 		setFileName(file.name);
 		setEncoding(result.encoding === "shift_jis" ? "shift_jis" : "utf-8");
-		setMessage(`${file.name} を ${result.encoding} として読み込みました`);
+		const firstError = result.errors[0];
+		const warning = firstError ? `。${firstError.row + 1} 行目などに引用符の誤りがあります` : "";
+		setMessage(`${file.name} を ${result.encoding} として読み込みました${warning}`);
 	};
 
 	// 保存ボタンはライブラリの外に置き、exportBlob / exportCsv を呼ぶ
 	const handleSave = () => {
-		const blob = editor.exportBlob({ encoding });
+		let blob: Blob;
+		try {
+			blob = editor.exportBlob({ encoding });
+		} catch (error) {
+			if (!(error instanceof UnencodableCharacterError)) throw error;
+			const first = error.cells[0];
+			const where = first ? `（${first.row + 1} 行 ${first.col + 1} 列など）` : "";
+			setMessage(`${encoding} で表せない文字 ${error.chars.join(" ")} があるため保存できません${where}`);
+			return;
+		}
 		const url = URL.createObjectURL(blob);
 		const link = document.createElement("a");
 		link.href = url;

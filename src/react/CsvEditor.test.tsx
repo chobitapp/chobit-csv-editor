@@ -88,6 +88,45 @@ describe("CsvEditor", () => {
 		expect(csv).toBe("x,b\r\n");
 	});
 
+	it("編集中に load すると編集中の値を捨て、読み込んだ表に書き込まない", async () => {
+		const { input, editor } = setup("a");
+		type(input, "x");
+		await act(() => editor().load("b"));
+		fireEvent.keyDown(input, { key: "Enter" });
+		expect(editor().rows).toEqual([["b"]]);
+	});
+
+	it("先に呼んだ load が後から終わっても、後から呼んだ load の内容を表示する", async () => {
+		const { editor } = setup("a");
+		let resolveSlow: (value: ArrayBuffer) => void = () => {};
+		const slow = { arrayBuffer: () => new Promise<ArrayBuffer>((resolve) => (resolveSlow = resolve)) } as Blob;
+		await act(async () => {
+			const first = editor().load(slow);
+			await editor().load("new");
+			resolveSlow(new TextEncoder().encode("old").buffer as ArrayBuffer);
+			await first;
+		});
+		expect(editor().rows).toEqual([["new"]]);
+	});
+
+	it("Shift_JIS で表せない文字を含むセルの位置をエラーで返す", () => {
+		const { editor } = setup("a,😀\n𠮷,b");
+		expect(() => editor().exportBlob({ encoding: "shift_jis" })).toThrow(
+			expect.objectContaining({
+				cells: [
+					{ row: 0, col: 1, chars: ["😀"] },
+					{ row: 1, col: 0, chars: ["𠮷"] },
+				],
+			}),
+		);
+	});
+
+	it("端の列の Tab はフォーカスを表の外へ移せるよう既定の動作を止めない", () => {
+		const { input } = setup("a,b");
+		expect(fireEvent.keyDown(input, { key: "Tab" })).toBe(false);
+		expect(fireEvent.keyDown(input, { key: "Tab" })).toBe(true);
+	});
+
 	it("編集して元に戻すと未保存の変更が無い状態に戻る", () => {
 		const { input, editor } = setup("a");
 		type(input, "x");

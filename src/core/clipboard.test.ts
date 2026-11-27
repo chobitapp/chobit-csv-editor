@@ -8,8 +8,12 @@ describe("parseClipboardText", () => {
 		]);
 	});
 
-	it("タブを含まなければ CSV として分割する", () => {
-		expect(parseClipboardText('a,"b\nc"\n1,2')).toEqual([
+	it("タブも改行も含まなければ、カンマがあっても分割しない", () => {
+		expect(parseClipboardText("Hello, world\n")).toEqual([["Hello, world"]]);
+	});
+
+	it('"comma" は CSV として分割する', () => {
+		expect(parseClipboardText('a,"b\nc"\n1,2', "comma")).toEqual([
 			["a", "b\nc"],
 			["1", "2"],
 		]);

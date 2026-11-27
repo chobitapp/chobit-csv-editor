@@ -2,7 +2,6 @@ import {
 	type ColumnDef,
 	columnResizingFeature,
 	columnSizingFeature,
-	type Row as TableRow,
 	tableFeatures,
 	useTable,
 } from "@tanstack/react-table";
@@ -24,6 +23,8 @@ import { type CellPosition, collapsed, type Direction, isInRange, movePosition }
 import type { CsvEditorInstance } from "./useCsvEditor";
 
 type GridRow = readonly string[];
+
+const noRows: GridRow[] = [];
 
 const features = tableFeatures({ columnSizingFeature, columnResizingFeature });
 
@@ -98,24 +99,22 @@ export function CsvEditor({
 
 	const columns = useMemo<ColumnDef<typeof features, GridRow>[]>(
 		() =>
-			columnIds.map((id, index) => ({
+			columnIds.map((id) => ({
 				id,
-				accessorFn: (row: GridRow) => row[index] ?? "",
 				size: defaultColumnWidth,
 				minSize: minColumnWidth,
 			})),
 		[columnIds, defaultColumnWidth, minColumnWidth],
 	);
 
+	// 列幅の管理だけに使う。行モデルは作ると編集のたびに全行分の処理が走るので、行は rows から直接描画する
 	const table = useTable({
 		features,
 		columns,
-		data: rows as GridRow[],
-		getRowId: (_row, index) => String(index),
+		data: noRows,
 		columnResizeMode: "onChange",
 	});
 
-	const tableRows = table.getRowModel().rows;
 	const leafColumns = table.getAllLeafColumns();
 	const widths = leafColumns.map((column) => column.getSize());
 	const totalWidth = rowHeaderWidth + table.getTotalSize();
@@ -207,11 +206,17 @@ export function CsvEditor({
 
 	const commitEditRef = useRef(commitEdit);
 	commitEditRef.current = commitEdit;
-	const { _registerEditCommitter } = editor;
-	useEffect(() => {
-		_registerEditCommitter(() => commitEditRef.current());
-		return () => _registerEditCommitter(null);
-	}, [_registerEditCommitter]);
+	const { _registerEditSession } = editor;
+	useEffect(
+		() =>
+			_registerEditSession({
+				commit: () => commitEditRef.current(),
+				cancel: () => {
+					if (editingRef.current) cancelEdit();
+				},
+			}),
+		[_registerEditSession, cancelEdit],
+	);
 
 	const startEdit = useCallback(
 		(mode: EditMode, initialValue?: string) => {
@@ -306,6 +311,8 @@ export function CsvEditor({
 		}
 		switch (event.key) {
 			case "Tab":
+				// 端の列ではフォーカスを表の外へ移せるよう、ブラウザの既定の動作に任せる
+				if (event.shiftKey ? anchor.col === 0 : anchor.col === columnCount - 1) return;
 				event.preventDefault();
 				moveActive(event.shiftKey ? "left" : "right");
 				return;
@@ -446,12 +453,12 @@ export function CsvEditor({
 		focusInput();
 	};
 
-	const renderRow = (row: TableRow<typeof features, GridRow>, rowIndex: number, rowStyle: CSSProperties) => {
+	const renderRow = (row: GridRow, rowIndex: number, rowStyle: CSSProperties) => {
 		const isHeader = hasHeader && rowIndex === 0;
 		const rowSelected = rowIndex >= selectionRange.top && rowIndex <= selectionRange.bottom;
 		return (
 			<div
-				key={row.id}
+				key={rowIndex}
 				role="row"
 				aria-rowindex={rowIndex + 2}
 				className={`tce-row${isHeader ? " tce-row--header" : ""}`}
@@ -467,12 +474,12 @@ export function CsvEditor({
 				>
 					{isHeader ? "H" : rowIndex - bodyStart + 1}
 				</div>
-				{row.getAllCells().map((cell, col) => {
+				{leafColumns.map((column, col) => {
 					const selected = isInRange(selectionRange, rowIndex, col);
 					const active = anchor.row === rowIndex && anchor.col === col;
 					return (
 						<div
-							key={cell.id}
+							key={column.id}
 							role="gridcell"
 							aria-selected={selected}
 							data-cell={`${rowIndex}:${col}`}
@@ -482,7 +489,7 @@ export function CsvEditor({
 							onMouseEnter={() => handleCellMouseEnter(rowIndex, col)}
 							onDoubleClick={() => startEdit("edit", editor.getCell(rowIndex, col))}
 						>
-							{cell.getValue() as string}
+							{row[col]}
 						</div>
 					);
 				})}
@@ -490,7 +497,7 @@ export function CsvEditor({
 		);
 	};
 
-	const headerRow = hasHeader ? tableRows[0] : undefined;
+	const headerRow = hasHeader ? rows[0] : undefined;
 
 	return (
 		<div
@@ -548,7 +555,7 @@ export function CsvEditor({
 					<div ref={bodyRef} className="tce-body" style={{ height: virtualizer.getTotalSize() }}>
 						{virtualizer.getVirtualItems().map((item) => {
 							const rowIndex = item.index + bodyStart;
-							const row = tableRows[rowIndex];
+							const row = rows[rowIndex];
 							if (!row) return null;
 							return renderRow(row, rowIndex, {
 								transform: `translateY(${item.start - bodyOffset}px)`,

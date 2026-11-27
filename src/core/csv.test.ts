@@ -1,4 +1,4 @@
-import { parseCsv, stringifyCsv } from "./csv";
+import { parseCsv, parseCsvWithErrors, stringifyCsv } from "./csv";
 
 describe("parseCsv", () => {
 	it("引用符で囲まれた改行・カンマ・引用符を 1 つの値として読む", () => {
@@ -14,6 +14,30 @@ describe("parseCsv", () => {
 			["a", "b"],
 			["1", "2"],
 		]);
+	});
+});
+
+describe("parseCsvWithErrors", () => {
+	it("引用符の外の CRLF・LF・CR を全て行の区切りとし、引用符の中の改行は値に残す", () => {
+		expect(parseCsvWithErrors('a,b\r\nc,"d\r\ne"\nf,g\rh,i\r\n')).toEqual({
+			rows: [
+				["a", "b"],
+				["c", "d\r\ne"],
+				["f", "g"],
+				["h", "i"],
+			],
+			errors: [],
+		});
+	});
+
+	it("閉じない引用符はその値だけを引用符の無い値として読み、以降の行は普通に読む", () => {
+		expect(parseCsvWithErrors('a,"b\nc,d\n')).toEqual({
+			rows: [
+				["a", '"b'],
+				["c", "d"],
+			],
+			errors: [{ code: "unclosed-quote", row: 0, col: 1 }],
+		});
 	});
 });
 

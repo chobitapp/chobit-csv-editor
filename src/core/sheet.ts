@@ -13,12 +13,19 @@ let columnSeq = 0;
 const newColumnId = () => `col_${++columnSeq}`;
 
 export function createSheet(rows: readonly (readonly string[])[]): Sheet {
-	const width = Math.max(1, ...rows.map((row) => row.length));
+	const width = maxLength(rows);
 	const normalized = rows.length > 0 ? rows.map((row) => padRow(row, width)) : [padRow([], width)];
 	return {
 		rows: normalized,
 		colIds: Array.from({ length: width }, newColumnId),
 	};
+}
+
+// Math.max(...rows) は行数が多いと引数の数の上限を超えて RangeError になる
+function maxLength(rows: readonly (readonly unknown[])[]): number {
+	let max = 1;
+	for (const row of rows) if (row.length > max) max = row.length;
+	return max;
 }
 
 function padRow(row: readonly string[], width: number): readonly string[] {
@@ -30,7 +37,7 @@ function padRow(row: readonly string[], width: number): readonly string[] {
 
 export function setCell(sheet: Sheet, row: number, col: number, value: string): Sheet {
 	const current = sheet.rows[row];
-	if (current === undefined || col >= sheet.colIds.length || current[col] === value) return sheet;
+	if (current === undefined || col < 0 || col >= sheet.colIds.length || current[col] === value) return sheet;
 	const nextRow = current.slice();
 	nextRow[col] = value;
 	const rows = sheet.rows.slice();
@@ -74,7 +81,7 @@ export function pasteValues(
 	}
 
 	const height = values.length;
-	const width = Math.max(1, ...values.map((line) => line.length));
+	const width = maxLength(values);
 	let next = sheet;
 	if (col + width > next.colIds.length) {
 		next = insertColumns(next, next.colIds.length, col + width - next.colIds.length);
@@ -106,8 +113,8 @@ export function pasteValues(
 export function insertRows(sheet: Sheet, at: number, count = 1): Sheet {
 	if (count <= 0) return sheet;
 	const blank = () => Array.from({ length: sheet.colIds.length }, () => "");
-	const rows = sheet.rows.slice();
-	rows.splice(Math.max(0, Math.min(at, rows.length)), 0, ...Array.from({ length: count }, blank));
+	const index = Math.max(0, Math.min(at, sheet.rows.length));
+	const rows = [...sheet.rows.slice(0, index), ...Array.from({ length: count }, blank), ...sheet.rows.slice(index)];
 	return { ...sheet, rows };
 }
 
@@ -123,14 +130,13 @@ export function deleteRows(sheet: Sheet, start: number, count = 1): Sheet {
 export function insertColumns(sheet: Sheet, at: number, count = 1): Sheet {
 	if (count <= 0) return sheet;
 	const index = Math.max(0, Math.min(at, sheet.colIds.length));
-	const colIds = sheet.colIds.slice();
-	colIds.splice(index, 0, ...Array.from({ length: count }, newColumnId));
+	const colIds = [
+		...sheet.colIds.slice(0, index),
+		...Array.from({ length: count }, newColumnId),
+		...sheet.colIds.slice(index),
+	];
 	const blanks = Array.from({ length: count }, () => "");
-	const rows = sheet.rows.map((row) => {
-		const next = row.slice();
-		next.splice(index, 0, ...blanks);
-		return next;
-	});
+	const rows = sheet.rows.map((row) => [...row.slice(0, index), ...blanks, ...row.slice(index)]);
 	return { rows, colIds };
 }
 
