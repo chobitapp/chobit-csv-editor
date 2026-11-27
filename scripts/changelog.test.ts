@@ -46,6 +46,6 @@ describe("extractReleaseNotes", () => {
 	it("finds a section for every released version in the real CHANGELOG.md", () => {
 		const real = readFileSync(new URL("../CHANGELOG.md", import.meta.url), "utf8");
 		expect(extractReleaseNotes(real, "0.1.0")).toContain("Initial release.");
-		expect(extractReleaseNotes(real, "0.1.1")).toContain("repository URL");
+		expect(extractReleaseNotes(real, "0.1.1")).toContain("No code changes.");
 	});
 });
