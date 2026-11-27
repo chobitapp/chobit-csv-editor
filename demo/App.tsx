@@ -2,23 +2,44 @@ import { useState } from "react";
 import "../src/styles.css";
 import "./demo.css";
 import { CsvEditor, type OutputEncoding, stringifyCsv, UnencodableCharacterError, useCsvEditor } from "../src";
+import { type SampleId, samples } from "./samples";
 
-const sample = `Name,City,Note
-Alice Smith,London,"Line 1
-Line 2"
-山田太郎,東京,"A value with a comma, inside"
-José García,Madrid,"A value with ""quotes"" inside"
-`;
+const [initialSample] = samples as [(typeof samples)[number]];
+/** The preview stringifies only this many rows, so it stays fast with the large sample. */
+const previewRowLimit = 100;
 
 export function App() {
-	const editor = useCsvEditor({ initialCsv: sample, initialHasHeader: true });
-	const [fileName, setFileName] = useState("sample.csv");
+	const editor = useCsvEditor({ initialCsv: initialSample.createCsv(), initialHasHeader: true });
+	const [fileName, setFileName] = useState(initialSample.fileName);
+	const [sampleId, setSampleId] = useState<SampleId | null>(initialSample.id);
+	const [loading, setLoading] = useState(false);
 	const [encoding, setEncoding] = useState<OutputEncoding>("utf-8");
 	const [message, setMessage] = useState("");
+	const [previewOpen, setPreviewOpen] = useState(false);
+
+	const confirmDiscard = () => !editor.isDirty || window.confirm("Discard your unsaved changes?");
+
+	const handleSample = async (id: SampleId) => {
+		const sample = samples.find((item) => item.id === id);
+		if (!sample || !confirmDiscard()) return;
+		setLoading(true);
+		setMessage(`Loading the ${id} sample…`);
+		// Let the browser paint the loading state before generating and parsing up to 100,000 rows
+		await new Promise((resolve) => setTimeout(resolve, 0));
+		const startedAt = performance.now();
+		const result = await editor.load(sample.createCsv(), { hasHeader: true });
+		const elapsed = Math.round(performance.now() - startedAt);
+		setLoading(false);
+		setSampleId(id);
+		setFileName(sample.fileName);
+		setEncoding(result.encoding);
+		setMessage(`Loaded ${sample.fileName} in ${elapsed.toLocaleString("en-US")} ms`);
+	};
 
 	const handleFile = async (file: File | undefined) => {
-		if (!file) return;
+		if (!file || !confirmDiscard()) return;
 		const result = await editor.load(file);
+		setSampleId(null);
 		setFileName(file.name);
 		setEncoding(result.encoding);
 		const firstError = result.errors[0];
@@ -49,13 +70,19 @@ export function App() {
 	};
 
 	const { top, left } = editor.selectionRange;
+	const rowCount = editor.rows.length;
+	// Data rows, so the header line is not counted when the first row is a header
+	const recordCount = editor.records.length;
+	const columnCount = editor.rows[0]?.length ?? 0;
+	// Widen the row number column so 6-digit row numbers in the large sample are not cut off
+	const rowHeaderWidth = Math.max(48, String(rowCount).length * 8 + 20);
 
 	return (
 		<main className="demo">
 			<header className="demo-header">
 				<h1 className="demo-title">chobit-csv-editor</h1>
 				<span className="demo-filename">
-					{fileName}
+					{fileName} · {recordCount.toLocaleString("en-US")} rows × {columnCount} columns
 					{editor.isDirty ? " (unsaved changes)" : ""}
 				</span>
 				<a className="demo-link" href="https://github.com/chobitapp/chobit-csv-editor">
@@ -64,6 +91,24 @@ export function App() {
 			</header>
 			<div className="demo-toolbar">
 				<div className="demo-group">
+					<select
+						className="demo-select"
+						aria-label="Sample CSV"
+						value={sampleId ?? ""}
+						disabled={loading}
+						onChange={(event) => handleSample(event.target.value as SampleId)}
+					>
+						{sampleId === null && (
+							<option value="" disabled>
+								Your file
+							</option>
+						)}
+						{samples.map((sample) => (
+							<option key={sample.id} value={sample.id}>
+								{sample.label}
+							</option>
+						))}
+					</select>
 					<label className="demo-button demo-file">
 						Open file
 						<input type="file" accept=".csv,text/csv" onChange={(event) => handleFile(event.target.files?.[0])} />
@@ -125,14 +170,17 @@ export function App() {
 				</div>
 			</div>
 			<div className="demo-editor">
-				<CsvEditor editor={editor} height={480} />
+				<CsvEditor editor={editor} height={480} rowHeaderWidth={rowHeaderWidth} />
 			</div>
 			<p className="demo-status" role="status">
 				{message}
 			</p>
-			<details className="demo-preview">
-				<summary>CSV preview</summary>
-				<pre>{stringifyCsv(editor.rows)}</pre>
+			<details className="demo-preview" onToggle={(event) => setPreviewOpen(event.currentTarget.open)}>
+				<summary>
+					CSV preview
+					{rowCount > previewRowLimit ? ` (first ${previewRowLimit} of ${rowCount.toLocaleString("en-US")} lines)` : ""}
+				</summary>
+				{previewOpen && <pre>{stringifyCsv(editor.rows.slice(0, previewRowLimit))}</pre>}
 			</details>
 		</main>
 	);
