@@ -11,6 +11,7 @@ import {
 	type CSSProperties,
 	type KeyboardEvent,
 	type MouseEvent,
+	type PointerEvent,
 	type ReactNode,
 	useCallback,
 	useEffect,
@@ -40,6 +41,8 @@ export interface CsvEditorProps {
 	minColumnWidth?: number;
 	/** 1 行あたりの高さの見積もり。省略時は 28 */
 	estimatedRowHeight?: number;
+	/** 行の高さをドラッグで変える時の下限。省略時は 20 */
+	minRowHeight?: number;
 	/** 行番号の列の幅。省略時は 48 */
 	rowHeaderWidth?: number;
 	readOnly?: boolean;
@@ -80,6 +83,7 @@ export function CsvEditor({
 	defaultColumnWidth = 120,
 	minColumnWidth = 40,
 	estimatedRowHeight = 28,
+	minRowHeight = 20,
 	rowHeaderWidth = 48,
 	readOnly = false,
 	columnLabel = defaultColumnLabel,
@@ -92,8 +96,11 @@ export function CsvEditor({
 	const editingRef = useRef<EditingCell | null>(null);
 	const [editing, setEditingState] = useState<EditingCell | null>(null);
 	const [bodyOffset, setBodyOffset] = useState(0);
+	// 行 ID ごとの高さ。無い行は内容に合わせた高さで表示する
+	const [rowHeights, setRowHeights] = useState<Readonly<Record<string, number>>>({});
+	const [resizingRowId, setResizingRowId] = useState<string | null>(null);
 
-	const { rows, columnIds, rowCount, columnCount, hasHeader, selection, selectionRange } = editor;
+	const { rows, columnIds, rowIds, rowCount, columnCount, hasHeader, selection, selectionRange } = editor;
 	const anchor = selection.anchor;
 	const bodyStart = hasHeader ? 1 : 0;
 
@@ -122,7 +129,8 @@ export function CsvEditor({
 	const virtualizer = useVirtualizer({
 		count: Math.max(0, rowCount - bodyStart),
 		getScrollElement: () => scrollRef.current,
-		estimateSize: () => estimatedRowHeight,
+		getItemKey: (index) => rowIds[index + bodyStart] ?? index,
+		estimateSize: (index) => rowHeights[rowIds[index + bodyStart] ?? ""] ?? estimatedRowHeight,
 		overscan: 10,
 		scrollMargin: bodyOffset,
 		scrollPaddingStart: bodyOffset,
@@ -453,16 +461,48 @@ export function CsvEditor({
 		focusInput();
 	};
 
+	const handleRowResizeStart = (event: PointerEvent<HTMLDivElement>, rowId: string) => {
+		if (event.button !== 0) return;
+		event.stopPropagation();
+		const rowElement = event.currentTarget.closest<HTMLElement>(".tce-row");
+		const startHeight = rowElement?.getBoundingClientRect().height ?? estimatedRowHeight;
+		const startY = event.clientY;
+		setResizingRowId(rowId);
+		const move = (moveEvent: globalThis.PointerEvent) => {
+			const next = Math.max(minRowHeight, Math.round(startHeight + moveEvent.clientY - startY));
+			setRowHeights((current) => (current[rowId] === next ? current : { ...current, [rowId]: next }));
+		};
+		const end = () => {
+			setResizingRowId(null);
+			document.removeEventListener("pointermove", move);
+			document.removeEventListener("pointerup", end);
+			document.removeEventListener("pointercancel", end);
+		};
+		document.addEventListener("pointermove", move);
+		document.addEventListener("pointerup", end);
+		document.addEventListener("pointercancel", end);
+	};
+
+	const resetRowHeight = (rowId: string) => {
+		setRowHeights((current) => {
+			if (!(rowId in current)) return current;
+			const { [rowId]: _removed, ...rest } = current;
+			return rest;
+		});
+	};
+
 	const renderRow = (row: GridRow, rowIndex: number, rowStyle: CSSProperties) => {
 		const isHeader = hasHeader && rowIndex === 0;
 		const rowSelected = rowIndex >= selectionRange.top && rowIndex <= selectionRange.bottom;
+		const rowId = rowIds[rowIndex] ?? "";
+		const rowHeight = rowHeights[rowId];
 		return (
 			<div
-				key={rowIndex}
+				key={rowId}
 				role="row"
 				aria-rowindex={rowIndex + 2}
-				className={`tce-row${isHeader ? " tce-row--header" : ""}`}
-				style={rowStyle}
+				className={`tce-row${isHeader ? " tce-row--header" : ""}${rowHeight === undefined ? "" : " tce-row--sized"}`}
+				style={rowHeight === undefined ? rowStyle : { ...rowStyle, height: rowHeight }}
 				data-index={isHeader ? undefined : rowIndex - bodyStart}
 				ref={isHeader ? undefined : virtualizer.measureElement}
 			>
@@ -473,6 +513,16 @@ export function CsvEditor({
 					onMouseEnter={() => handleCellMouseEnter(rowIndex, columnCount - 1)}
 				>
 					{isHeader ? "H" : rowIndex - bodyStart + 1}
+					<div
+						className={`tce-row-resizer${resizingRowId === rowId ? " tce-row-resizer--active" : ""}`}
+						onPointerDown={(event) => handleRowResizeStart(event, rowId)}
+						onMouseDown={(event) => {
+							// 行の選択を始めず、表のキー操作を受ける textarea からフォーカスを外さない
+							event.preventDefault();
+							event.stopPropagation();
+						}}
+						onDoubleClick={() => resetRowHeight(rowId)}
+					/>
 				</div>
 				{leafColumns.map((column, col) => {
 					const selected = isInRange(selectionRange, rowIndex, col);

@@ -75,6 +75,8 @@ export interface EditSession {
 export interface CsvEditorInstance {
 	readonly rows: readonly (readonly string[])[];
 	readonly columnIds: readonly string[];
+	/** 行の挿入・削除をまたいで行に紐付く安定 ID。rows と同じ長さ */
+	readonly rowIds: readonly string[];
 	readonly rowCount: number;
 	readonly columnCount: number;
 	readonly hasHeader: boolean;
@@ -317,11 +319,12 @@ export function useCsvEditor(options: UseCsvEditorOptions = {}): CsvEditorInstan
 	const records = useMemo(() => (hasHeader ? present.rows.slice(1) : present.rows), [present.rows, hasHeader]);
 
 	return useMemo(() => {
-		const { rows, colIds } = state.history.present;
+		const { rows, colIds, rowIds } = state.history.present;
 		return {
 			...methods,
 			rows,
 			columnIds: colIds,
+			rowIds,
 			rowCount: rows.length,
 			columnCount: colIds.length,
 			hasHeader: state.hasHeader,

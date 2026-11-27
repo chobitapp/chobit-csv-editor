@@ -100,6 +100,22 @@
 .tce-rowheader {
 	padding: var(--tce-cell-padding);
 	font-variant-numeric: tabular-nums;
+	overflow: hidden;
+}
+
+.tce-row-resizer {
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	width: 100%;
+	height: 5px;
+	cursor: row-resize;
+	touch-action: none;
+}
+
+.tce-row-resizer:hover,
+.tce-row-resizer--active {
+	background: var(--tce-resizer);
 }
 
 .tce-colheader {
@@ -140,6 +156,12 @@
 	white-space: pre;
 	overflow: hidden;
 	text-overflow: ellipsis;
+}
+
+/* 高さを指定した行は、内容が収まらなくてもその高さで切る */
+.tce-row--sized > .tce-cell,
+.tce-row--sized > .tce-rowheader {
+	min-height: 0;
 }
 
 .tce-row--header .tce-cell {

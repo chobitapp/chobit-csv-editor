@@ -2,15 +2,19 @@ import type { CellRange } from "./selection";
 
 /**
  * 編集対象の表。rows の各行は常に colIds と同じ長さに揃える。
- * colIds は列の挿入・削除をまたいで列幅などを列に紐付けておくための安定 ID。
+ * colIds・rowIds は挿入・削除をまたいで列幅や行の高さを列・行に紐付けておくための安定 ID。
+ * rowIds は常に rows と同じ長さに揃える。
  */
 export interface Sheet {
 	readonly rows: readonly (readonly string[])[];
 	readonly colIds: readonly string[];
+	readonly rowIds: readonly string[];
 }
 
 let columnSeq = 0;
 const newColumnId = () => `col_${++columnSeq}`;
+let rowSeq = 0;
+const newRowId = () => `row_${++rowSeq}`;
 
 export function createSheet(rows: readonly (readonly string[])[]): Sheet {
 	const width = maxLength(rows);
@@ -18,6 +22,7 @@ export function createSheet(rows: readonly (readonly string[])[]): Sheet {
 	return {
 		rows: normalized,
 		colIds: Array.from({ length: width }, newColumnId),
+		rowIds: Array.from({ length: normalized.length }, newRowId),
 	};
 }
 
@@ -115,16 +120,26 @@ export function insertRows(sheet: Sheet, at: number, count = 1): Sheet {
 	const blank = () => Array.from({ length: sheet.colIds.length }, () => "");
 	const index = Math.max(0, Math.min(at, sheet.rows.length));
 	const rows = [...sheet.rows.slice(0, index), ...Array.from({ length: count }, blank), ...sheet.rows.slice(index)];
-	return { ...sheet, rows };
+	const rowIds = [
+		...sheet.rowIds.slice(0, index),
+		...Array.from({ length: count }, newRowId),
+		...sheet.rowIds.slice(index),
+	];
+	return { ...sheet, rows, rowIds };
 }
 
 /** 最後の 1 行は消さずに空にする（編集できる場所を残すため） */
 export function deleteRows(sheet: Sheet, start: number, count = 1): Sheet {
 	if (count <= 0 || start >= sheet.rows.length) return sheet;
 	const rows = sheet.rows.slice();
+	const rowIds = sheet.rowIds.slice();
 	rows.splice(start, count);
-	if (rows.length === 0) rows.push(Array.from({ length: sheet.colIds.length }, () => ""));
-	return { ...sheet, rows };
+	rowIds.splice(start, count);
+	if (rows.length === 0) {
+		rows.push(Array.from({ length: sheet.colIds.length }, () => ""));
+		rowIds.push(newRowId());
+	}
+	return { ...sheet, rows, rowIds };
 }
 
 export function insertColumns(sheet: Sheet, at: number, count = 1): Sheet {
@@ -137,14 +152,14 @@ export function insertColumns(sheet: Sheet, at: number, count = 1): Sheet {
 	];
 	const blanks = Array.from({ length: count }, () => "");
 	const rows = sheet.rows.map((row) => [...row.slice(0, index), ...blanks, ...row.slice(index)]);
-	return { rows, colIds };
+	return { ...sheet, rows, colIds };
 }
 
 /** 最後の 1 列は消さずに空にする（編集できる場所を残すため） */
 export function deleteColumns(sheet: Sheet, start: number, count = 1): Sheet {
 	if (count <= 0 || start >= sheet.colIds.length) return sheet;
 	if (count >= sheet.colIds.length && start === 0) {
-		return { rows: sheet.rows.map(() => [""]), colIds: [newColumnId()] };
+		return { ...sheet, rows: sheet.rows.map(() => [""]), colIds: [newColumnId()] };
 	}
 	const colIds = sheet.colIds.slice();
 	colIds.splice(start, count);
@@ -153,5 +168,5 @@ export function deleteColumns(sheet: Sheet, start: number, count = 1): Sheet {
 		next.splice(start, count);
 		return next;
 	});
-	return { rows, colIds };
+	return { ...sheet, rows, colIds };
 }

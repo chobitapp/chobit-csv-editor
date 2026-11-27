@@ -29,6 +29,10 @@ function type(input: HTMLTextAreaElement, text: string) {
 }
 
 describe("CsvEditor", () => {
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
 	it("選択中のセルに直接入力すると上書きで編集が始まり、Enter で確定して下へ移る", () => {
 		const { input, editor } = setup("a,b\nc,d");
 		type(input, "x");
@@ -135,5 +139,29 @@ describe("CsvEditor", () => {
 		fireEvent.keyDown(input, { key: "z", ctrlKey: true });
 		expect(editor().getCell(0, 0)).toBe("a");
 		expect(editor().isDirty).toBe(false);
+	});
+
+	it("行番号の下端をドラッグすると行の高さを変え、行を挿入しても同じ行に高さが残り、ダブルクリックで戻る", () => {
+		// jsdom は要素の大きさが 0 になり、仮想スクロールが行を描画しないため
+		vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(300);
+		vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(800);
+		const { editor } = setup("a\nb");
+		const rowOf = (text: string) => screen.getByText(text).closest<HTMLElement>("[role=row]");
+		const resizer = rowOf("b")?.querySelector(".tce-row-resizer");
+		if (!resizer) throw new Error("resizer not found");
+		fireEvent.pointerDown(resizer, { button: 0, clientY: 100 });
+		fireEvent.pointerMove(document, { clientY: 160 });
+		fireEvent.pointerUp(document);
+		const height = rowOf("b")?.style.height;
+		expect(height).toMatch(/px$/);
+
+		act(() => editor().insertRows(0));
+		expect(rowOf("b")?.style.height).toBe(height);
+		expect(rowOf("a")?.style.height).toBe("");
+
+		const moved = rowOf("b")?.querySelector(".tce-row-resizer");
+		if (!moved) throw new Error("resizer not found");
+		fireEvent.doubleClick(moved);
+		expect(rowOf("b")?.style.height).toBe("");
 	});
 });

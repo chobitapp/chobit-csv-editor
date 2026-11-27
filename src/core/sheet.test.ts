@@ -1,4 +1,4 @@
-import { createSheet, deleteColumns, deleteRows, insertColumns, pasteValues } from "./sheet";
+import { createSheet, deleteColumns, deleteRows, insertColumns, insertRows, pasteValues } from "./sheet";
 
 describe("createSheet", () => {
 	it("列数が揃っていない行を最大の列数まで空文字で埋める", () => {
@@ -46,5 +46,16 @@ describe("行と列の削除", () => {
 		const sheet = insertColumns(createSheet([["a", "b"]]), 2);
 		const [, second, third] = sheet.colIds;
 		expect(deleteColumns(sheet, 0, 1).colIds).toEqual([second, third]);
+	});
+
+	it("行を挿入・削除しても残りの行の ID を保ち、列の操作では行の ID を変えない", () => {
+		const sheet = createSheet([["a"], ["b"]]);
+		const [first, second] = sheet.rowIds;
+		const inserted = insertRows(sheet, 1);
+		expect(inserted.rowIds).toHaveLength(3);
+		expect(inserted.rowIds[0]).toBe(first);
+		expect(inserted.rowIds[2]).toBe(second);
+		expect(deleteRows(inserted, 0, 2).rowIds).toEqual([second]);
+		expect(deleteColumns(insertColumns(sheet, 0), 0, 2).rowIds).toEqual(sheet.rowIds);
 	});
 });
