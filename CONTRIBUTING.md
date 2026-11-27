@@ -45,8 +45,24 @@ Please keep pull requests focused on one change. For larger changes, opening an 
 
 ## Releasing (maintainers)
 
-1. Bump `version` in `package.json` and commit.
-2. Push a tag `vX.Y.Z` matching the version. The Release workflow runs the checks, publishes to npm, and creates a GitHub Release.
+Releases are published from a maintainer's machine, not from GitHub Actions, so no publishing credentials are stored on GitHub.
+
+1. Bump `version` in `package.json`, commit, and push `main`.
+2. Publish to npm. `prepublishOnly` runs `pnpm validate` first, and pnpm refuses to publish from a dirty tree or a branch other than `main`:
+
+   ```sh
+   pnpm publish
+   ```
+
+3. Tag the release and create the GitHub Release:
+
+   ```sh
+   git tag vX.Y.Z
+   git push origin vX.Y.Z
+   gh release create vX.Y.Z --verify-tag --generate-notes --title vX.Y.Z
+   ```
+
+4. Deploy the demo with `pnpm deploy:demo` (see [Deploying the demo](README.md#deploying-the-demo)).
 
 ## Code of conduct
 
