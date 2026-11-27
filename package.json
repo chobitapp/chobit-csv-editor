@@ -1,11 +1,30 @@
 {
-	"name": "tanstack-table-csv-editor",
+	"name": "@zaru/react-csv-editor",
 	"version": "0.1.0",
 	"description": "TanStack Table ベースのスプレッドシート風 CSV エディタ (React)",
-	"type": "module",
+	"keywords": [
+		"react",
+		"csv",
+		"csv-editor",
+		"spreadsheet",
+		"tanstack-table",
+		"shift_jis"
+	],
+	"homepage": "https://github.com/zaru/react-csv-editor#readme",
+	"bugs": {
+		"url": "https://github.com/zaru/react-csv-editor/issues"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/zaru/react-csv-editor.git"
+	},
 	"license": "MIT",
+	"author": "zaru",
+	"type": "module",
 	"files": [
-		"dist"
+		"dist",
+		"README.md",
+		"LICENSE"
 	],
 	"main": "./dist/index.js",
 	"module": "./dist/index.js",
@@ -15,11 +34,17 @@
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
 		},
-		"./styles.css": "./dist/styles.css"
+		"./styles.css": "./dist/styles.css",
+		"./package.json": "./package.json"
 	},
 	"sideEffects": [
 		"**/*.css"
 	],
+	"publishConfig": {
+		"access": "public",
+		"registry": "https://registry.npmjs.org/"
+	},
+	"packageManager": "pnpm@12.23.0",
 	"scripts": {
 		"dev": "vite --config vite.demo.config.ts",
 		"build": "vite build && tsc -p tsconfig.build.json && cp src/styles.css dist/styles.css",
@@ -27,7 +52,9 @@
 		"test": "vitest run",
 		"typecheck": "tsc --noEmit",
 		"lint": "biome check .",
-		"format": "biome check --write ."
+		"format": "biome check --write .",
+		"pack:check": "pnpm build && publint --strict && pnpm pack --dry-run",
+		"validate": "pnpm lint && pnpm typecheck && pnpm test && pnpm pack:check"
 	},
 	"peerDependencies": {
 		"react": ">=18",
@@ -50,6 +77,7 @@
 		"@types/react-dom": "^19.3.0",
 		"@vitejs/plugin-react": "^6.3.0",
 		"jsdom": "^31.0.1",
+		"publint": "^0.3.25",
 		"react": "^19.3.1",
 		"react-dom": "^19.3.1",
 		"typescript": "^7.0.2",

@@ -1,4 +1,4 @@
-# tanstack-table-csv-editor
+# @zaru/react-csv-editor
 
 [TanStack Table](https://tanstack.com/table) を使った、React 向けのスプレッドシート風 CSV エディタです。
 CSV の文字列やファイルを渡すと、ブラウザ上で表として編集できます。
@@ -15,7 +15,7 @@ CSV の文字列やファイルを渡すと、ブラウザ上で表として編�
 ## インストール
 
 ```sh
-pnpm add tanstack-table-csv-editor
+pnpm add @zaru/react-csv-editor
 ```
 
 React 18 以降が必要です。
@@ -23,8 +23,8 @@ React 18 以降が必要です。
 ## 使い方
 
 ```tsx
-import { CsvEditor, useCsvEditor } from "tanstack-table-csv-editor";
-import "tanstack-table-csv-editor/styles.css";
+import { CsvEditor, useCsvEditor } from "@zaru/react-csv-editor";
+import "@zaru/react-csv-editor/styles.css";
 
 export function Page({ csv }: { csv: string }) {
 	const editor = useCsvEditor({ initialCsv: csv, initialHasHeader: true });
@@ -147,4 +147,16 @@ pnpm test       # Vitest
 pnpm typecheck
 pnpm lint       # Biome
 pnpm build      # dist/ にライブラリを出力する
+pnpm validate   # lint・型検査・テストの後、publint と pnpm pack --dry-run で公開する中身を確かめる
 ```
+
+## リリース
+
+npm への公開は GitHub Actions が行います。npm のトークンは使わず、npm の trusted publishing で認証します。
+
+1. `package.json` の `version` を上げて main にコミットする
+2. `v` に同じバージョンを付けたタグを push する（例: `git tag v0.2.0 && git push origin v0.2.0`）
+
+タグと `version` が一致しない時、`pnpm validate` が失敗した時は公開しません。
+
+trusted publisher は npm 上のパッケージ設定で登録するため、パッケージがまだ無い初回だけは手元から `pnpm validate && npm publish` で公開します。その後、npm のパッケージ設定で trusted publisher としてこのリポジトリの `release.yml` と environment `npm` を登録し、GitHub のリポジトリに environment `npm` を作ります。
