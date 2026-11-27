@@ -1,0 +1,186 @@
+.tce-root {
+	--tce-font: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif;
+	--tce-font-size: 13px;
+	--tce-line-height: 20px;
+	--tce-cell-padding: 3px 6px;
+	--tce-header-height: 26px;
+	--tce-bg: #fff;
+	--tce-fg: #1f2328;
+	--tce-border: #d0d7de;
+	--tce-header-bg: #f6f8fa;
+	--tce-header-fg: #57606a;
+	--tce-header-selected-bg: #dbe9fb;
+	--tce-header-row-bg: #eef2f6;
+	--tce-selected-bg: rgba(33, 118, 237, 0.12);
+	--tce-active-border: #2176ed;
+	--tce-resizer: #2176ed;
+
+	position: relative;
+	box-sizing: border-box;
+	border: 1px solid var(--tce-border);
+	background: var(--tce-bg);
+	color: var(--tce-fg);
+	font-family: var(--tce-font);
+	font-size: var(--tce-font-size);
+	line-height: var(--tce-line-height);
+	overflow: hidden;
+}
+
+.tce-root *,
+.tce-root *::before,
+.tce-root *::after {
+	box-sizing: border-box;
+}
+
+.tce-scroll {
+	position: relative;
+	width: 100%;
+	height: 100%;
+	overflow: auto;
+}
+
+.tce-grid {
+	position: relative;
+	user-select: none;
+}
+
+.tce-colheaders,
+.tce-row {
+	display: flex;
+}
+
+.tce-colheaders {
+	position: sticky;
+	top: 0;
+	z-index: 3;
+	height: var(--tce-header-height);
+}
+
+.tce-row--header {
+	position: sticky;
+	top: var(--tce-header-height);
+	z-index: 2;
+	font-weight: 600;
+}
+
+.tce-body {
+	position: relative;
+}
+
+.tce-body > .tce-row {
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
+.tce-corner,
+.tce-colheader,
+.tce-rowheader {
+	flex: none;
+	background: var(--tce-header-bg);
+	color: var(--tce-header-fg);
+	border-right: 1px solid var(--tce-border);
+	border-bottom: 1px solid var(--tce-border);
+	text-align: center;
+	cursor: default;
+}
+
+.tce-corner,
+.tce-rowheader {
+	position: sticky;
+	left: 0;
+	z-index: 1;
+	width: var(--tce-rowheader-width);
+}
+
+.tce-corner {
+	z-index: 4;
+}
+
+.tce-rowheader {
+	padding: var(--tce-cell-padding);
+	font-variant-numeric: tabular-nums;
+}
+
+.tce-colheader {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+}
+
+.tce-colheader--selected,
+.tce-rowheader--selected {
+	background: var(--tce-header-selected-bg);
+}
+
+.tce-resizer {
+	position: absolute;
+	top: 0;
+	right: 0;
+	width: 6px;
+	height: 100%;
+	cursor: col-resize;
+	touch-action: none;
+}
+
+.tce-resizer:hover,
+.tce-resizer--active {
+	background: var(--tce-resizer);
+}
+
+.tce-cell {
+	flex: none;
+	min-height: calc(var(--tce-line-height) + 7px);
+	padding: var(--tce-cell-padding);
+	border-right: 1px solid var(--tce-border);
+	border-bottom: 1px solid var(--tce-border);
+	background: var(--tce-bg);
+	white-space: pre;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.tce-row--header .tce-cell {
+	background: var(--tce-header-row-bg);
+}
+
+.tce-cell--selected {
+	background-image: linear-gradient(var(--tce-selected-bg), var(--tce-selected-bg));
+}
+
+.tce-cell--active {
+	box-shadow: inset 0 0 0 2px var(--tce-active-border);
+}
+
+/* 選択中のセルに重ねて置き、直接入力と IME を受ける。編集していない間は見えない */
+.tce-input {
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 5;
+	margin: 0;
+	padding: var(--tce-cell-padding);
+	border: none;
+	outline: none;
+	resize: none;
+	overflow: hidden;
+	font: inherit;
+	line-height: inherit;
+	color: transparent;
+	caret-color: transparent;
+	background: transparent;
+	pointer-events: none;
+	white-space: pre-wrap;
+}
+
+.tce-input--editing {
+	color: var(--tce-fg);
+	caret-color: auto;
+	background: var(--tce-bg);
+	box-shadow:
+		inset 0 0 0 2px var(--tce-active-border),
+		0 2px 6px rgba(0, 0, 0, 0.15);
+	pointer-events: auto;
+}
