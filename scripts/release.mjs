@@ -13,6 +13,8 @@ const dryRun = process.argv.includes("--dry-run");
 const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 const { name, version } = pkg;
 const tag = `v${version}`;
+// Ask the registry we publish to, not a mirror or proxy set in the user's npm config, which may lag behind.
+const registry = pkg.publishConfig?.registry ?? "https://registry.npmjs.org/";
 // A prerelease (e.g. 1.0.0-beta.1) must not become "latest" on npm or on GitHub.
 const prerelease = version.includes("-");
 
@@ -90,7 +92,7 @@ if (!succeeds("gh", ["auth", "status"])) fail("The GitHub CLI is not signed in. 
 /** Whether this exact version is already on npm. Compares the output, not only the exit status. */
 function isPublished() {
 	try {
-		return run("npm", ["view", `${name}@${version}`, "version"]) === version;
+		return run("npm", ["view", `${name}@${version}`, "version", "--registry", registry]) === version;
 	} catch {
 		return false;
 	}
