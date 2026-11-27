@@ -3,31 +3,31 @@ import Papa from "papaparse";
 export type LineEnding = "\r\n" | "\n";
 
 export interface ParseCsvOptions {
-	/** 省略時は "," */
+	/** Defaults to "," */
 	delimiter?: string;
 }
 
 export interface StringifyCsvOptions {
-	/** 省略時は "\r\n"（RFC 4180） */
+	/** Defaults to "\r\n" (RFC 4180) */
 	lineEnding?: LineEnding;
-	/** 省略時は "," */
+	/** Defaults to "," */
 	delimiter?: string;
-	/** 最後の行の後にも改行を付けるか。省略時は true */
+	/** Whether to add a line break after the last row too. Defaults to true */
 	trailingNewline?: boolean;
 	/**
-	 * `=` `+` `-` `@` タブ CR で始まる値の先頭に `'` を付け、表計算ソフトで数式として実行されないようにする（CSV インジェクション対策）。
-	 * 値そのものが変わるので、省略時は false
+	 * Prefixes `'` to values starting with `=` `+` `-` `@`, tab, or CR so spreadsheet apps do not run them as formulas (CSV injection protection).
+	 * Because this changes the values themselves, defaults to false
 	 */
 	escapeFormulae?: boolean;
 }
 
 /**
- * - "unclosed-quote": 引用符が閉じないまま行末まで来た。その値は先頭の `"` も含めて引用符の無い値として読む
- * - "text-after-quote": 閉じた引用符の後に区切り文字以外が続いた。続きの文字はその値に連結する
+ * - "unclosed-quote": a quote was not closed before the end of the line. The value is read as unquoted, including its leading `"`
+ * - "text-after-quote": a closing quote was followed by something other than a delimiter. The following characters are appended to the value
  */
 export interface CsvParseError {
 	code: "unclosed-quote" | "text-after-quote";
-	/** 0 始まりの行番号（読み込んだ表の行） */
+	/** Zero-based row index (a row of the parsed table) */
 	row: number;
 	col: number;
 }
@@ -38,13 +38,15 @@ export interface ParseCsvResult {
 }
 
 /**
- * RFC 4180 の CSV を読む。引用符の外にある CRLF・LF・CR はどれも行の区切りとして扱うので、改行コードが混在していても読める。
- * 末尾の改行は空行として数えない。
+ * Parses RFC 4180 CSV. CRLF, LF, and CR outside quotes are all treated as row separators, so mixed line endings are supported.
+ * A trailing line break does not count as an empty row.
  */
 export function parseCsvWithErrors(text: string, options: ParseCsvOptions = {}): ParseCsvResult {
 	const delimiter = options.delimiter ?? ",";
 	if (delimiter.length !== 1 || delimiter === '"' || delimiter === "\r" || delimiter === "\n") {
-		throw new Error(`区切り文字には引用符と改行以外の 1 文字を指定してください: ${JSON.stringify(delimiter)}`);
+		throw new Error(
+			`Delimiter must be a single character other than a quote or line break: ${JSON.stringify(delimiter)}`,
+		);
 	}
 	const source = text.startsWith("\uFEFF") ? text.slice(1) : text;
 	const rows: string[][] = [];
@@ -94,7 +96,7 @@ export function parseCsvWithErrors(text: string, options: ParseCsvOptions = {}):
 				}
 				value = buffer;
 			} else {
-				// 閉じない引用符で残り全体を 1 つの値として飲み込まないよう、この値だけを引用符の無い値として読み直す
+				// Re-read only this value as unquoted so an unclosed quote does not swallow the rest of the input as one value
 				errors.push({ code: "unclosed-quote", row: rows.length, col: row.length });
 				value = readUnquoted(start);
 			}

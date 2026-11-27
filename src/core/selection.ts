@@ -3,7 +3,7 @@ export interface CellPosition {
 	col: number;
 }
 
-/** anchor は範囲選択の起点、focus は Shift やドラッグで動く側の角 */
+/** anchor is where the range selection started; focus is the corner that moves with Shift or dragging */
 export interface Selection {
 	anchor: CellPosition;
 	focus: CellPosition;

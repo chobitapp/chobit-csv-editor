@@ -1,7 +1,7 @@
 import { createSheet, deleteColumns, deleteRows, insertColumns, insertRows, pasteValues } from "./sheet";
 
 describe("createSheet", () => {
-	it("列数が揃っていない行を最大の列数まで空文字で埋める", () => {
+	it("pads ragged rows with empty strings up to the widest row", () => {
 		expect(createSheet([["a"], ["b", "c", "d"]]).rows).toEqual([
 			["a", "", ""],
 			["b", "c", "d"],
@@ -10,7 +10,7 @@ describe("createSheet", () => {
 });
 
 describe("pasteValues", () => {
-	it("表からはみ出す分の行と列を追加して書き込む", () => {
+	it("adds rows and columns for values that extend past the table", () => {
 		const sheet = createSheet([["a", "b"]]);
 		const result = pasteValues(sheet, 0, 1, [
 			["1", "2"],
@@ -24,7 +24,7 @@ describe("pasteValues", () => {
 		expect(result.range).toEqual({ top: 0, left: 1, bottom: 1, right: 2 });
 	});
 
-	it("1 セル分の値を複数セルの選択範囲に貼ると範囲を埋める", () => {
+	it("fills the range when a single value is pasted into a multi-cell selection", () => {
 		const sheet = createSheet([
 			["a", "b"],
 			["c", "d"],
@@ -37,18 +37,18 @@ describe("pasteValues", () => {
 	});
 });
 
-describe("行と列の削除", () => {
-	it("全行を削除しても空の 1 行を残す", () => {
+describe("deleting rows and columns", () => {
+	it("keeps one empty row when all rows are deleted", () => {
 		expect(deleteRows(createSheet([["a", "b"]]), 0, 1).rows).toEqual([["", ""]]);
 	});
 
-	it("列を削除しても残りの列の ID を保つ", () => {
+	it("keeps the IDs of the remaining columns when a column is deleted", () => {
 		const sheet = insertColumns(createSheet([["a", "b"]]), 2);
 		const [, second, third] = sheet.colIds;
 		expect(deleteColumns(sheet, 0, 1).colIds).toEqual([second, third]);
 	});
 
-	it("行を挿入・削除しても残りの行の ID を保ち、列の操作では行の ID を変えない", () => {
+	it("keeps the IDs of the remaining rows when rows are inserted or deleted, and column operations do not change row IDs", () => {
 		const sheet = createSheet([["a"], ["b"]]);
 		const [first, second] = sheet.rowIds;
 		const inserted = insertRows(sheet, 1);

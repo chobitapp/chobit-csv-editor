@@ -29,44 +29,44 @@ import {
 } from "../core/sheet";
 
 export interface UseCsvEditorOptions {
-	/** 初期表示する CSV 文字列 */
+	/** The CSV string to show initially */
 	initialCsv?: string;
-	/** 1 行目をヘッダとして扱うか。省略時は false */
+	/** Whether to treat the first row as a header. Defaults to false */
 	initialHasHeader?: boolean;
-	/** initialCsv の区切り文字。省略時は "," */
+	/** The delimiter of initialCsv. Defaults to "," */
 	initialDelimiter?: string;
-	/** Undo できる最大回数。省略時は 100 */
+	/** The maximum number of undo steps. Defaults to 100 */
 	historyLimit?: number;
-	/** ペーストした文字列の区切り方。省略時は "auto" */
+	/** How pasted text is split. Defaults to "auto" */
 	pasteDelimiter?: PasteDelimiter;
-	/** 表の内容が変わるたびに呼ばれる */
+	/** Called whenever the table content changes */
 	onChange?: (rows: readonly (readonly string[])[]) => void;
 }
 
 export interface LoadOptions {
-	/** File / Blob を読む時の文字コード。省略時は "auto"（BOM か NUL の位置で UTF-16 を判定し、それ以外は UTF-8 として読めなければ Shift_JIS） */
+	/** The encoding used to read a File / Blob. Defaults to "auto" (detects UTF-16 from the BOM or NUL positions; otherwise uses UTF-8, falling back to Shift_JIS if the bytes are not valid UTF-8) */
 	encoding?: InputEncoding;
 	hasHeader?: boolean;
-	/** 省略時は "," */
+	/** Defaults to "," */
 	delimiter?: string;
 }
 
 export interface LoadResult {
 	encoding: DetectedEncoding;
-	/** 読み込んだ CSV の書式の誤り。誤りがあっても読める範囲で読み込む */
+	/** Format errors in the loaded CSV. Even with errors, as much as possible is loaded */
 	errors: CsvParseError[];
 }
 
 export type ExportCsvOptions = StringifyCsvOptions;
 
 export interface ExportBlobOptions extends ExportCsvOptions {
-	/** 省略時は "utf-8" */
+	/** Defaults to "utf-8" */
 	encoding?: OutputEncoding;
-	/** encoding で表せない文字の扱い。省略時は "error" で、UnencodableCharacterError を投げる */
+	/** How to handle characters that cannot be encoded in encoding. Defaults to "error", which throws UnencodableCharacterError */
 	unencodable?: UnencodableHandling;
 }
 
-/** @internal CsvEditor コンポーネントが編集中のセルを hook から確定・破棄できるよう登録する */
+/** @internal Registered by the CsvEditor component so the hook can commit or discard the cell being edited */
 export interface EditSession {
 	commit: () => void;
 	cancel: () => void;
@@ -75,33 +75,33 @@ export interface EditSession {
 export interface CsvEditorInstance {
 	readonly rows: readonly (readonly string[])[];
 	readonly columnIds: readonly string[];
-	/** 行の挿入・削除をまたいで行に紐付く安定 ID。rows と同じ長さ */
+	/** Stable IDs that stay attached to rows across insertions and deletions. Same length as rows */
 	readonly rowIds: readonly string[];
 	readonly rowCount: number;
 	readonly columnCount: number;
 	readonly hasHeader: boolean;
 	setHasHeader: (value: boolean) => void;
-	/** hasHeader が true の時の 1 行目。false なら null */
+	/** The first row when hasHeader is true; null when it is false */
 	readonly headers: readonly string[] | null;
-	/** ヘッダ行を除いたデータ行 */
+	/** The data rows, excluding the header row */
 	readonly records: readonly (readonly string[])[];
 
 	readonly selection: Selection;
 	readonly selectionRange: CellRange;
 	setSelection: (selection: Selection) => void;
 
-	/** 読み込みが終わる前に再び load を呼ぶと、後から呼んだ方の内容を表示する。編集中の値は破棄する */
+	/** If load is called again before the previous load finishes, the content from the later call is shown. Any value being edited is discarded */
 	load: (input: string | Blob, options?: LoadOptions) => Promise<LoadResult>;
 	exportCsv: (options?: ExportCsvOptions) => string;
 	exportBlob: (options?: ExportBlobOptions) => Blob;
-	/** encoding で表せない文字を含むセルを返す */
+	/** Returns the cells containing characters that cannot be encoded in encoding */
 	findUnencodableCells: (encoding: OutputEncoding) => CellPositionWithChars[];
 
 	getCell: (row: number, col: number) => string;
 	setCell: (row: number, col: number, value: string) => void;
-	/** 選択範囲の左上を起点にクリップボードの文字列を貼り付ける */
+	/** Pastes clipboard text with the top-left of the selection as the starting point */
 	pasteText: (text: string) => void;
-	/** 選択範囲を TSV 文字列にする */
+	/** Converts the selection to a TSV string */
 	getSelectedText: () => string;
 	clearSelectedCells: () => void;
 
@@ -117,11 +117,11 @@ export interface CsvEditorInstance {
 	readonly canUndo: boolean;
 	readonly canRedo: boolean;
 
-	/** 最後に load / markSaved した時点から内容が変わっているか */
+	/** Whether the content has changed since the last load / markSaved */
 	readonly isDirty: boolean;
 	markSaved: () => void;
 
-	/** @internal 登録を解除する関数を返す */
+	/** @internal Returns a function that unregisters the session */
 	readonly _registerEditSession: (session: EditSession) => () => void;
 }
 
@@ -149,7 +149,7 @@ export function useCsvEditor(options: UseCsvEditorOptions = {}): CsvEditorInstan
 	const [state, setState] = useState(() =>
 		initialState(options.initialCsv, options.initialHasHeader ?? false, options.initialDelimiter),
 	);
-	// メソッドが常に最新の状態を同期的に読めるよう ref にも持つ
+	// Also kept in a ref so methods can always read the latest state synchronously
 	const stateRef = useRef(state);
 	const sessionsRef = useRef(new Set<EditSession>());
 	const loadSeqRef = useRef(0);
@@ -163,7 +163,7 @@ export function useCsvEditor(options: UseCsvEditorOptions = {}): CsvEditorInstan
 		setState(next);
 	}, []);
 
-	// 編集中の値を先に確定してから表を変えないと、確定した値が変更後の表の同じ座標に書き込まれる
+	// Commit the value being edited before changing the table; otherwise it would be written to the same coordinates in the changed table
 	const flushEdit = useCallback(() => {
 		for (const session of sessionsRef.current) session.commit();
 	}, []);
@@ -315,7 +315,7 @@ export function useCsvEditor(options: UseCsvEditorOptions = {}): CsvEditorInstan
 	}, [update, editSheet, flushEdit, pasteDelimiter]);
 
 	const { hasHeader } = state;
-	// 選択を動かすたびに全行をコピーしないよう、rows が変わった時だけ作り直す
+	// Rebuild only when rows changes, so moving the selection does not copy every row
 	const records = useMemo(() => (hasHeader ? present.rows.slice(1) : present.rows), [present.rows, hasHeader]);
 
 	return useMemo(() => {

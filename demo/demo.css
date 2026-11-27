@@ -129,7 +129,7 @@ body {
 	background: currentColor;
 }
 
-/* input[type=file] は見た目を変えられないため、label をボタンとして見せて input は隠す */
+/* input[type=file] cannot be restyled, so the label is shown as the button and the input is hidden */
 .demo-file input {
 	position: absolute;
 	width: 1px;
@@ -180,4 +180,10 @@ body {
 	border-top: 1px solid var(--demo-border);
 	overflow: auto;
 	font-size: 12px;
+}
+
+.demo-link {
+	margin-left: auto;
+	color: var(--demo-muted);
+	font-size: 13px;
 }

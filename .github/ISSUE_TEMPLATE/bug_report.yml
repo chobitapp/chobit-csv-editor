@@ -1,0 +1,36 @@
+name: Bug report
+description: Report something that does not work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug, and what you expected to happen instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps or code to reproduce the problem. A small CSV sample helps a lot.
+      placeholder: |
+        1. Load this CSV: ...
+        2. Select cell B2 and press ...
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: chobit-csv-editor version
+      placeholder: e.g. 0.1.1
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: React version, browser, and OS
+      placeholder: e.g. React 19.1, Chrome 140, macOS 26
+    validations:
+      required: true

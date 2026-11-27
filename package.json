@@ -1,14 +1,18 @@
 {
 	"name": "chobit-csv-editor",
 	"version": "0.1.1",
-	"description": "TanStack Table ベースのスプレッドシート風 CSV エディタ (React)",
+	"description": "Spreadsheet-like CSV editor component for React, built on TanStack Table. IME-friendly, with Shift_JIS and UTF-16 support.",
 	"keywords": [
 		"react",
+		"react-component",
 		"csv",
 		"csv-editor",
 		"spreadsheet",
+		"data-grid",
 		"tanstack-table",
-		"shift_jis"
+		"ime",
+		"shift_jis",
+		"utf-16"
 	],
 	"homepage": "https://github.com/chobitapp/chobit-csv-editor#readme",
 	"bugs": {

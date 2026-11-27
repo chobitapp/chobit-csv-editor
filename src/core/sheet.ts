@@ -1,9 +1,9 @@
 import type { CellRange } from "./selection";
 
 /**
- * 編集対象の表。rows の各行は常に colIds と同じ長さに揃える。
- * colIds・rowIds は挿入・削除をまたいで列幅や行の高さを列・行に紐付けておくための安定 ID。
- * rowIds は常に rows と同じ長さに揃える。
+ * The table being edited. Every row in rows always has the same length as colIds.
+ * colIds and rowIds are stable IDs that keep column widths and row heights attached to their columns and rows across insertions and deletions.
+ * rowIds always has the same length as rows.
  */
 export interface Sheet {
 	readonly rows: readonly (readonly string[])[];
@@ -26,7 +26,7 @@ export function createSheet(rows: readonly (readonly string[])[]): Sheet {
 	};
 }
 
-// Math.max(...rows) は行数が多いと引数の数の上限を超えて RangeError になる
+// Math.max(...rows) throws a RangeError when there are so many rows that it exceeds the argument count limit
 function maxLength(rows: readonly (readonly unknown[])[]): number {
 	let max = 1;
 	for (const row of rows) if (row.length > max) max = row.length;
@@ -66,8 +66,8 @@ export function clearRange(sheet: Sheet, range: CellRange): Sheet {
 }
 
 /**
- * values を (row, col) を左上として書き込む。表からはみ出す分は行・列を追加する。
- * values が 1 セルで fillRange が複数セルなら、その範囲を同じ値で埋める。
+ * Writes values with (row, col) as the top-left corner. Rows and columns are added for anything that extends past the table.
+ * If values is a single cell and fillRange spans multiple cells, fills that range with the same value.
  */
 export function pasteValues(
 	sheet: Sheet,
@@ -128,7 +128,7 @@ export function insertRows(sheet: Sheet, at: number, count = 1): Sheet {
 	return { ...sheet, rows, rowIds };
 }
 
-/** 最後の 1 行は消さずに空にする（編集できる場所を残すため） */
+/** The last remaining row is cleared instead of removed (so there is always somewhere to edit) */
 export function deleteRows(sheet: Sheet, start: number, count = 1): Sheet {
 	if (count <= 0 || start >= sheet.rows.length) return sheet;
 	const rows = sheet.rows.slice();
@@ -155,7 +155,7 @@ export function insertColumns(sheet: Sheet, at: number, count = 1): Sheet {
 	return { ...sheet, rows, colIds };
 }
 
-/** 最後の 1 列は消さずに空にする（編集できる場所を残すため） */
+/** The last remaining column is cleared instead of removed (so there is always somewhere to edit) */
 export function deleteColumns(sheet: Sheet, start: number, count = 1): Sheet {
 	if (count <= 0 || start >= sheet.colIds.length) return sheet;
 	if (count >= sheet.colIds.length && start === 0) {
