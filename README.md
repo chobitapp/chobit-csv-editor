@@ -1,7 +1,6 @@
 # chobit-csv-editor
 
-[TanStack Table](https://tanstack.com/table) を使った、React 向けのスプレッドシート風 CSV エディタです。
-CSV の文字列やファイルを渡すと、ブラウザ上で表として編集できます。
+スプレッドシート風 CSV エディタ(React / TanStack Table依存)
 
 - 日本語の IME 入力に対応しています。変換を確定する Enter でセルが確定されることはありません
 - セル内で改行できます（Alt+Enter または Shift+Enter）

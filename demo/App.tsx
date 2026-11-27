@@ -1,5 +1,6 @@
 import { useState } from "react";
 import "../src/styles.css";
+import "./demo.css";
 import { CsvEditor, type OutputEncoding, stringifyCsv, UnencodableCharacterError, useCsvEditor } from "../src";
 
 const sample = `名前,住所,メモ
@@ -50,58 +51,83 @@ export function App() {
 	const { top, left } = editor.selectionRange;
 
 	return (
-		<main style={{ fontFamily: "system-ui, sans-serif", padding: 16 }}>
-			<h1 style={{ fontSize: 20 }}>CSV エディタ デモ</h1>
-			<div
-				style={{
-					display: "flex",
-					flexWrap: "wrap",
-					gap: 8,
-					alignItems: "center",
-					marginBottom: 8,
-				}}
-			>
-				<input type="file" accept=".csv,text/csv" onChange={(event) => handleFile(event.target.files?.[0])} />
-				<label>
-					<input
-						type="checkbox"
-						checked={editor.hasHeader}
-						onChange={(event) => editor.setHasHeader(event.target.checked)}
-					/>
-					1 行目をヘッダにする
-				</label>
-				<button type="button" onClick={() => editor.insertRows(top)}>
-					上に行を挿入
-				</button>
-				<button type="button" onClick={editor.deleteSelectedRows}>
-					選択行を削除
-				</button>
-				<button type="button" onClick={() => editor.insertColumns(left)}>
-					左に列を挿入
-				</button>
-				<button type="button" onClick={editor.deleteSelectedColumns}>
-					選択列を削除
-				</button>
-				<button type="button" onClick={editor.undo} disabled={!editor.canUndo}>
-					元に戻す
-				</button>
-				<button type="button" onClick={editor.redo} disabled={!editor.canRedo}>
-					やり直す
-				</button>
-				<select value={encoding} onChange={(event) => setEncoding(event.target.value as OutputEncoding)}>
-					<option value="utf-8">UTF-8</option>
-					<option value="utf-8-bom">UTF-8 (BOM 付き)</option>
-					<option value="shift_jis">Shift_JIS</option>
-					<option value="utf-16le">UTF-16LE (BOM 付き)</option>
-					<option value="utf-16be">UTF-16BE (BOM 付き)</option>
-				</select>
-				<button type="button" onClick={handleSave}>
-					保存{editor.isDirty ? " *" : ""}
-				</button>
+		<main className="demo">
+			<header className="demo-header">
+				<h1 className="demo-title">CSV エディタ デモ</h1>
+				<span className="demo-filename">
+					{fileName}
+					{editor.isDirty ? "（未保存の変更あり）" : ""}
+				</span>
+			</header>
+			<div className="demo-toolbar">
+				<div className="demo-group">
+					<label className="demo-button demo-file">
+						ファイルを開く
+						<input type="file" accept=".csv,text/csv" onChange={(event) => handleFile(event.target.files?.[0])} />
+					</label>
+					<label className="demo-checkbox">
+						<input
+							type="checkbox"
+							checked={editor.hasHeader}
+							onChange={(event) => editor.setHasHeader(event.target.checked)}
+						/>
+						1 行目をヘッダにする
+					</label>
+				</div>
+				<span className="demo-separator" />
+				<div className="demo-group">
+					<span className="demo-group-label">行</span>
+					<button type="button" className="demo-button" onClick={() => editor.insertRows(top)}>
+						上に挿入
+					</button>
+					<button type="button" className="demo-button demo-button--danger" onClick={editor.deleteSelectedRows}>
+						削除
+					</button>
+				</div>
+				<div className="demo-group">
+					<span className="demo-group-label">列</span>
+					<button type="button" className="demo-button" onClick={() => editor.insertColumns(left)}>
+						左に挿入
+					</button>
+					<button type="button" className="demo-button demo-button--danger" onClick={editor.deleteSelectedColumns}>
+						削除
+					</button>
+				</div>
+				<span className="demo-separator" />
+				<div className="demo-group">
+					<button type="button" className="demo-button" onClick={editor.undo} disabled={!editor.canUndo}>
+						元に戻す
+					</button>
+					<button type="button" className="demo-button" onClick={editor.redo} disabled={!editor.canRedo}>
+						やり直す
+					</button>
+				</div>
+				<div className="demo-group demo-group--end">
+					<select
+						className="demo-select"
+						aria-label="保存する文字コード"
+						value={encoding}
+						onChange={(event) => setEncoding(event.target.value as OutputEncoding)}
+					>
+						<option value="utf-8">UTF-8</option>
+						<option value="utf-8-bom">UTF-8 (BOM 付き)</option>
+						<option value="shift_jis">Shift_JIS</option>
+						<option value="utf-16le">UTF-16LE (BOM 付き)</option>
+						<option value="utf-16be">UTF-16BE (BOM 付き)</option>
+					</select>
+					<button type="button" className="demo-button demo-button--primary" onClick={handleSave}>
+						保存
+						{editor.isDirty && <span className="demo-dirty" aria-hidden="true" />}
+					</button>
+				</div>
 			</div>
-			<CsvEditor editor={editor} height={480} />
-			<p>{message}</p>
-			<details>
+			<div className="demo-editor">
+				<CsvEditor editor={editor} height={480} />
+			</div>
+			<p className="demo-status" role="status">
+				{message}
+			</p>
+			<details className="demo-preview">
 				<summary>CSV プレビュー</summary>
 				<pre>{stringifyCsv(editor.rows)}</pre>
 			</details>

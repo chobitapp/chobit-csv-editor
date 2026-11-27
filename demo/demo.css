@@ -1,0 +1,183 @@
+:root {
+	--demo-fg: #1f2328;
+	--demo-muted: #57606a;
+	--demo-border: #d0d7de;
+	--demo-bg: #f6f8fa;
+	--demo-surface: #fff;
+	--demo-hover: #eef1f4;
+	--demo-accent: #2176ed;
+	--demo-accent-hover: #1a63c9;
+	--demo-danger: #cf222e;
+	--demo-radius: 6px;
+}
+
+body {
+	margin: 0;
+	background: var(--demo-bg);
+	color: var(--demo-fg);
+	font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif;
+	font-size: 14px;
+}
+
+.demo {
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 24px 16px;
+}
+
+.demo-header {
+	display: flex;
+	align-items: baseline;
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.demo-title {
+	margin: 0;
+	font-size: 20px;
+}
+
+.demo-filename {
+	color: var(--demo-muted);
+	font-size: 13px;
+}
+
+.demo-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 16px;
+	padding: 8px;
+	margin-bottom: 8px;
+	border: 1px solid var(--demo-border);
+	border-radius: var(--demo-radius);
+	background: var(--demo-surface);
+}
+
+.demo-group {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.demo-group-label {
+	margin-right: 4px;
+	color: var(--demo-muted);
+	font-size: 12px;
+}
+
+.demo-group--end {
+	margin-left: auto;
+}
+
+.demo-button,
+.demo-select {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	height: 30px;
+	padding: 0 10px;
+	border: 1px solid var(--demo-border);
+	border-radius: var(--demo-radius);
+	background: var(--demo-surface);
+	color: inherit;
+	font: inherit;
+	font-size: 13px;
+	line-height: 1;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.demo-button:focus-visible,
+.demo-select:focus-visible,
+.demo-file:focus-within {
+	outline: 2px solid var(--demo-accent);
+	outline-offset: 1px;
+}
+
+.demo-button:disabled {
+	color: var(--demo-muted);
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.demo-button:hover:not(:disabled),
+.demo-select:hover {
+	background: var(--demo-hover);
+}
+
+.demo-button--danger:hover:not(:disabled) {
+	border-color: var(--demo-danger);
+	color: var(--demo-danger);
+}
+
+.demo-button--primary {
+	border-color: var(--demo-accent);
+	background: var(--demo-accent);
+	color: #fff;
+	font-weight: 600;
+}
+
+.demo-button--primary:hover:not(:disabled) {
+	background: var(--demo-accent-hover);
+}
+
+.demo-dirty {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: currentColor;
+}
+
+/* input[type=file] は見た目を変えられないため、label をボタンとして見せて input は隠す */
+.demo-file input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	opacity: 0;
+}
+
+.demo-checkbox {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 13px;
+	cursor: pointer;
+}
+
+.demo-separator {
+	width: 1px;
+	height: 20px;
+	background: var(--demo-border);
+}
+
+.demo-editor .tce-root {
+	border-radius: var(--demo-radius);
+}
+
+.demo-status {
+	min-height: 20px;
+	margin: 8px 0 16px;
+	color: var(--demo-muted);
+	font-size: 13px;
+}
+
+.demo-preview {
+	border: 1px solid var(--demo-border);
+	border-radius: var(--demo-radius);
+	background: var(--demo-surface);
+}
+
+.demo-preview summary {
+	padding: 8px 12px;
+	cursor: pointer;
+	font-size: 13px;
+}
+
+.demo-preview pre {
+	margin: 0;
+	padding: 12px;
+	border-top: 1px solid var(--demo-border);
+	overflow: auto;
+	font-size: 12px;
+}
