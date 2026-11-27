@@ -74,8 +74,6 @@ export function App() {
 	// Data rows, so the header line is not counted when the first row is a header
 	const recordCount = editor.records.length;
 	const columnCount = editor.rows[0]?.length ?? 0;
-	// Widen the row number column so 6-digit row numbers in the large sample are not cut off
-	const rowHeaderWidth = Math.max(48, String(rowCount).length * 8 + 20);
 
 	return (
 		<main className="demo">
@@ -170,7 +168,7 @@ export function App() {
 				</div>
 			</div>
 			<div className="demo-editor">
-				<CsvEditor editor={editor} height={480} rowHeaderWidth={rowHeaderWidth} />
+				<CsvEditor editor={editor} height={480} />
 			</div>
 			<p className="demo-status" role="status">
 				{message}

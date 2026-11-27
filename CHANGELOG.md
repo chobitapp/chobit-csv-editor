@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+
+- Row numbers of 10,000 and above were cut off in the row number column. By default the column now fits the largest row number in the current font (at least 48px) and widens as rows are added. Pass `rowHeaderWidth` to keep a fixed width.
+
 ## [0.2.0] - 2026-11-27
 
 ### Added

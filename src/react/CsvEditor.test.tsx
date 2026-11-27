@@ -170,6 +170,28 @@ describe("CsvEditor", () => {
 		expect(rowOf("b")?.style.height).toBe("");
 	});
 
+	describe("row number column width", () => {
+		const rowHeaderWidth = () =>
+			(document.querySelector(".tce-root") as HTMLElement).style.getPropertyValue("--tce-rowheader-width");
+
+		it("fits the number of digits of the largest row number by default", () => {
+			setup("x\n".repeat(12_345));
+			expect(rowHeaderWidth()).toBe("max(48px, calc(5ch + 20px))");
+		});
+
+		it("widens when inserted rows add a digit", () => {
+			const { editor } = setup("x\n".repeat(9));
+			expect(rowHeaderWidth()).toBe("max(48px, calc(1ch + 20px))");
+			act(() => editor().insertRows(0));
+			expect(rowHeaderWidth()).toBe("max(48px, calc(2ch + 20px))");
+		});
+
+		it("uses rowHeaderWidth as a fixed width when it is given", () => {
+			render(<MenuHarness rowHeaderWidth={60} />);
+			expect(rowHeaderWidth()).toBe("60px");
+		});
+	});
+
 	describe("context menu", () => {
 		beforeEach(() => {
 			// jsdom gives elements a size of 0, so virtual scrolling would not render any rows

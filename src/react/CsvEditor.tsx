@@ -58,7 +58,10 @@ export interface CsvEditorProps {
 	estimatedRowHeight?: number;
 	/** Minimum row height when resizing a row by dragging. Defaults to 20 */
 	minRowHeight?: number;
-	/** Width of the row number column. Defaults to 48 */
+	/**
+	 * Width of the row number column in pixels. By default the column fits the largest row number in the current font
+	 * (at least 48px), so it widens as rows are added, e.g. for 100,000 rows
+	 */
 	rowHeaderWidth?: number;
 	readOnly?: boolean;
 	/** Column header labels. Defaults to A, B, ..., Z, AA, ... */
@@ -106,13 +109,14 @@ export function CsvEditor({
 	minColumnWidth = 40,
 	estimatedRowHeight = 28,
 	minRowHeight = 20,
-	rowHeaderWidth = 48,
+	rowHeaderWidth,
 	readOnly = false,
 	columnLabel = defaultColumnLabel,
 	contextMenu = true,
 	onContextMenu,
 }: CsvEditorProps) {
 	const rootRef = useRef<HTMLDivElement>(null);
+	const cornerRef = useRef<HTMLDivElement>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const bodyRef = useRef<HTMLDivElement>(null);
 	const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -149,7 +153,12 @@ export function CsvEditor({
 
 	const leafColumns = table.getAllLeafColumns();
 	const widths = leafColumns.map((column) => column.getSize());
-	const totalWidth = rowHeaderWidth + table.getTotalSize();
+	// Without an explicit width, size the row number column in CSS: `ch` is the width of a digit in the actual font,
+	// so it fits even when the font or font size is customized. 20px covers the default padding and border
+	const bodyRowCount = Math.max(1, rowCount - bodyStart);
+	const rowHeaderWidthCss =
+		rowHeaderWidth === undefined ? `max(48px, calc(${String(bodyRowCount).length}ch + 20px))` : `${rowHeaderWidth}px`;
+	const totalWidth = `calc(var(--tce-rowheader-width) + ${table.getTotalSize()}px)`;
 
 	const virtualizer = useVirtualizer({
 		count: Math.max(0, rowCount - bodyStart),
@@ -190,7 +199,8 @@ export function CsvEditor({
 		const scroller = scrollRef.current;
 		if (!scroller) return;
 		const left = starts[pos.col] ?? 0;
-		const right = left + rowHeaderWidth + (widths[pos.col] ?? 0);
+		// The row number column's width may come from CSS, so read the rendered width
+		const right = left + (cornerRef.current?.offsetWidth ?? rowHeaderWidth ?? 48) + (widths[pos.col] ?? 0);
 		if (left < scroller.scrollLeft) {
 			scroller.scrollLeft = left;
 		} else if (right > scroller.scrollLeft + scroller.clientWidth) {
@@ -649,7 +659,7 @@ export function CsvEditor({
 			style={{
 				height,
 				...style,
-				["--tce-rowheader-width" as string]: `${rowHeaderWidth}px`,
+				["--tce-rowheader-width" as string]: rowHeaderWidthCss,
 			}}
 		>
 			<div ref={scrollRef} className="tce-scroll" onScroll={positionInput}>
@@ -663,7 +673,7 @@ export function CsvEditor({
 					onContextMenu={handleContextMenu}
 				>
 					<div role="row" className="tce-colheaders">
-						<div role="columnheader" className="tce-corner" onMouseDown={handleCornerMouseDown} />
+						<div ref={cornerRef} role="columnheader" className="tce-corner" onMouseDown={handleCornerMouseDown} />
 						{table.getHeaderGroups()[0]?.headers.map((header, col) => {
 							const selected = col >= selectionRange.left && col <= selectionRange.right;
 							const resize = header.getResizeHandler();

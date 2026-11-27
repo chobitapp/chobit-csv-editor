@@ -119,19 +119,19 @@ When saving as Shift_JIS, symbols that map differently on Windows and macOS, suc
 
 ### `<CsvEditor>`
 
-| Prop                                    | Type                                          | Default           |
-| --------------------------------------- | --------------------------------------------- | ----------------- |
-| `editor`                                | Return value of `useCsvEditor()`              | Required          |
-| `height`                                | `number \| string`                            | `400`             |
-| `readOnly`                              | `boolean`                                     | `false`           |
-| `defaultColumnWidth` / `minColumnWidth` | `number`                                      | `120` / `40`      |
-| `estimatedRowHeight`                    | `number`                                      | `28`              |
-| `minRowHeight`                          | `number`                                      | `20`              |
-| `rowHeaderWidth`                        | `number`                                      | `48`              |
-| `columnLabel`                           | `(index) => ReactNode`                        | A, B, …, Z, AA, … |
-| `contextMenu`                           | `boolean \| (context, defaultItems) => items` | `true`            |
-| `onContextMenu`                         | `(context, event) => void`                    | —                 |
-| `className` / `style`                   |                                               |                   |
+| Prop                                    | Type                                          | Default                                     |
+| --------------------------------------- | --------------------------------------------- | ------------------------------------------- |
+| `editor`                                | Return value of `useCsvEditor()`              | Required                                    |
+| `height`                                | `number \| string`                            | `400`                                       |
+| `readOnly`                              | `boolean`                                     | `false`                                     |
+| `defaultColumnWidth` / `minColumnWidth` | `number`                                      | `120` / `40`                                |
+| `estimatedRowHeight`                    | `number`                                      | `28`                                        |
+| `minRowHeight`                          | `number`                                      | `20`                                        |
+| `rowHeaderWidth`                        | `number`                                      | Fits the largest row number (at least 48px) |
+| `columnLabel`                           | `(index) => ReactNode`                        | A, B, …, Z, AA, …                           |
+| `contextMenu`                           | `boolean \| (context, defaultItems) => items` | `true`                                      |
+| `onContextMenu`                         | `(context, event) => void`                    | —                                           |
+| `className` / `style`                   |                                               |                                             |
 
 ### Context menu
 
