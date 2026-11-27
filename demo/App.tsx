@@ -19,7 +19,7 @@ export function App() {
 		if (!file) return;
 		const result = await editor.load(file);
 		setFileName(file.name);
-		setEncoding(result.encoding === "shift_jis" ? "shift_jis" : "utf-8");
+		setEncoding(result.encoding);
 		const firstError = result.errors[0];
 		const warning = firstError ? `。${firstError.row + 1} 行目などに引用符の誤りがあります` : "";
 		setMessage(`${file.name} を ${result.encoding} として読み込みました${warning}`);
@@ -92,6 +92,8 @@ export function App() {
 					<option value="utf-8">UTF-8</option>
 					<option value="utf-8-bom">UTF-8 (BOM 付き)</option>
 					<option value="shift_jis">Shift_JIS</option>
+					<option value="utf-16le">UTF-16LE (BOM 付き)</option>
+					<option value="utf-16be">UTF-16BE (BOM 付き)</option>
 				</select>
 				<button type="button" onClick={handleSave}>
 					保存{editor.isDirty ? " *" : ""}

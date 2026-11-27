@@ -3,6 +3,7 @@ import { type PasteDelimiter, parseClipboardText, toTsv } from "../core/clipboar
 import { type CsvParseError, parseCsvWithErrors, type StringifyCsvOptions, stringifyCsv } from "../core/csv";
 import {
 	type CellPositionWithChars,
+	charsetOf,
 	type DetectedEncoding,
 	encodeText,
 	findUnencodableChars,
@@ -43,7 +44,7 @@ export interface UseCsvEditorOptions {
 }
 
 export interface LoadOptions {
-	/** File / Blob を読む時の文字コード。省略時は "auto"（UTF-8 として読めなければ Shift_JIS） */
+	/** File / Blob を読む時の文字コード。省略時は "auto"（BOM か NUL の位置で UTF-16 を判定し、それ以外は UTF-8 として読めなければ Shift_JIS） */
 	encoding?: InputEncoding;
 	hasHeader?: boolean;
 	/** 省略時は "," */
@@ -257,9 +258,8 @@ export function useCsvEditor(options: UseCsvEditorOptions = {}): CsvEditorInstan
 						throw new UnencodableCharacterError(encoding, chars, cells);
 					}
 				}
-				const charset = encoding === "shift_jis" ? "shift_jis" : "utf-8";
 				return new Blob([encodeText(csv, encoding, unencodable)], {
-					type: `text/csv;charset=${charset}`,
+					type: `text/csv;charset=${charsetOf(encoding)}`,
 				});
 			},
 			findUnencodableCells,
