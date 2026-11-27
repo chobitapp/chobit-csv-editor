@@ -92,7 +92,7 @@ if (!succeeds("gh", ["auth", "status"])) fail("The GitHub CLI is not signed in. 
 /** Whether this exact version is already on npm. Compares the output, not only the exit status. */
 function isPublished() {
 	try {
-		return run("npm", ["view", `${name}@${version}`, "version", "--registry", registry]) === version;
+		return run("npm", ["view", `${name}@${version}`, "version", "--registry", registry, "--prefer-online"]) === version;
 	} catch {
 		return false;
 	}
@@ -119,6 +119,18 @@ if (published) {
 	step("Publishing to npm (prepublishOnly runs pnpm validate first)");
 	// stdio is inherited so npm can prompt for a one-time password.
 	execFileSync("pnpm", ["publish", ...(prerelease ? ["--tag", "next"] : [])], { stdio: "inherit" });
+
+	// npm can take a few minutes to serve a new version after accepting it. Wait until it does, so the tag and
+	// the GitHub Release are only created for a version people can actually install. (pnpm's
+	// --publish-wait-timeout is listed in its help but rejected by its argument parser, so poll here.)
+	step(`Waiting for ${name}@${version} to appear on ${registry}`);
+	const deadline = Date.now() + 10 * 60 * 1000;
+	while (!isPublished()) {
+		if (Date.now() > deadline) {
+			fail(`${name}@${version} did not appear on npm within 10 minutes. Check npm, then run pnpm release again.`);
+		}
+		Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10_000);
+	}
 }
 
 if (!localTag) {
