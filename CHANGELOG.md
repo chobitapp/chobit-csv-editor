@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-27
+
 ### Added
 
 - Japanese labels for the context menu and the cell editor's `aria-label`. The language follows the browser's language preferences by default, falling back to English, and the new `locale` prop (`"en"` or `"ja"`) overrides it. `ContextMenuContext` has a new `locale` field, and the `CsvEditorLocale` type is exported.
