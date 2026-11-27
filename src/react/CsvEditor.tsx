@@ -20,7 +20,22 @@ import {
 	useRef,
 	useState,
 } from "react";
-import { type CellPosition, collapsed, type Direction, isInRange, movePosition } from "../core/selection";
+import {
+	type CellPosition,
+	collapsed,
+	type Direction,
+	isInRange,
+	movePosition,
+	type Selection,
+	toRange,
+} from "../core/selection";
+import {
+	ContextMenu,
+	type ContextMenuContext,
+	type ContextMenuItem,
+	type ContextMenuOption,
+	defaultContextMenuItems,
+} from "./ContextMenu";
 import type { CsvEditorInstance } from "./useCsvEditor";
 
 type GridRow = readonly string[];
@@ -31,29 +46,36 @@ const features = tableFeatures({ columnSizingFeature, columnResizingFeature });
 
 export interface CsvEditorProps {
 	editor: CsvEditorInstance;
-	/** 表示領域の高さ。省略時は 400 */
+	/** Height of the viewport. Defaults to 400 */
 	height?: number | string;
 	className?: string;
 	style?: CSSProperties;
-	/** 省略時は 120 */
+	/** Defaults to 120 */
 	defaultColumnWidth?: number;
-	/** 省略時は 40 */
+	/** Defaults to 40 */
 	minColumnWidth?: number;
-	/** 1 行あたりの高さの見積もり。省略時は 28 */
+	/** Estimated height of each row. Defaults to 28 */
 	estimatedRowHeight?: number;
-	/** 行の高さをドラッグで変える時の下限。省略時は 20 */
+	/** Minimum row height when resizing a row by dragging. Defaults to 20 */
 	minRowHeight?: number;
-	/** 行番号の列の幅。省略時は 48 */
+	/** Width of the row number column. Defaults to 48 */
 	rowHeaderWidth?: number;
 	readOnly?: boolean;
-	/** 列見出しの表示。省略時は A, B, ..., Z, AA, ... */
+	/** Column header labels. Defaults to A, B, ..., Z, AA, ... */
 	columnLabel?: (index: number) => ReactNode;
+	/**
+	 * The right-click menu. Defaults to true, which shows row and column insert and delete items. false disables it.
+	 * Pass a function to receive the default items and return the items to show. Not shown when readOnly
+	 */
+	contextMenu?: ContextMenuOption;
+	/** Called when a cell, row number, or column header is right-clicked. Calling preventDefault() suppresses the menu */
+	onContextMenu?: (context: ContextMenuContext, event: MouseEvent) => void;
 }
 
 type EditMode = "type" | "edit";
 
 interface EditingCell extends CellPosition {
-	/** "type" は文字の入力で始めた編集で、矢印キーで確定して移動する */
+	/** "type" is editing started by typing a character; arrow keys commit and move */
 	mode: EditMode;
 }
 
@@ -87,6 +109,8 @@ export function CsvEditor({
 	rowHeaderWidth = 48,
 	readOnly = false,
 	columnLabel = defaultColumnLabel,
+	contextMenu = true,
+	onContextMenu,
 }: CsvEditorProps) {
 	const rootRef = useRef<HTMLDivElement>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
@@ -96,9 +120,10 @@ export function CsvEditor({
 	const editingRef = useRef<EditingCell | null>(null);
 	const [editing, setEditingState] = useState<EditingCell | null>(null);
 	const [bodyOffset, setBodyOffset] = useState(0);
-	// 行 ID ごとの高さ。無い行は内容に合わせた高さで表示する
+	// Height per row ID. Rows without an entry are sized to fit their content
 	const [rowHeights, setRowHeights] = useState<Readonly<Record<string, number>>>({});
 	const [resizingRowId, setResizingRowId] = useState<string | null>(null);
+	const [menu, setMenu] = useState<{ context: ContextMenuContext; items: ContextMenuItem[] } | null>(null);
 
 	const { rows, columnIds, rowIds, rowCount, columnCount, hasHeader, selection, selectionRange } = editor;
 	const anchor = selection.anchor;
@@ -114,7 +139,7 @@ export function CsvEditor({
 		[columnIds, defaultColumnWidth, minColumnWidth],
 	);
 
-	// 列幅の管理だけに使う。行モデルは作ると編集のたびに全行分の処理が走るので、行は rows から直接描画する
+	// Used only to manage column widths. Building a row model would process every row on each edit, so rows are rendered directly from rows
 	const table = useTable({
 		features,
 		columns,
@@ -159,7 +184,7 @@ export function CsvEditor({
 		return acc;
 	}, []);
 
-	// キー操作で動かした先のセルが見えるようにスクロールする。ペーストなど他の操作では表示位置を動かさない
+	// Scroll the cell moved to by the keyboard into view. Other actions such as paste do not move the scroll position
 	const revealCell = (pos: CellPosition) => {
 		if (pos.row >= bodyStart) virtualizer.scrollToIndex(pos.row - bodyStart, { align: "auto" });
 		const scroller = scrollRef.current;
@@ -249,7 +274,7 @@ export function CsvEditor({
 		const target = editingRef.current ?? editor.selection.anchor;
 		const cell = root.querySelector<HTMLElement>(`[data-cell="${target.row}:${target.col}"]`);
 		if (!cell) {
-			// 仮想スクロールで描画されていないセルでもキー入力を受けられるよう、フォーカスは保ったまま画面外へ置く
+			// Keep focus but move it off-screen so key input still works for cells not rendered by virtual scrolling
 			input.style.transform = "translate(-10000px, 0)";
 			return;
 		}
@@ -284,7 +309,7 @@ export function CsvEditor({
 	}, []);
 
 	const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-		// IME の変換中に押されたキー（変換確定の Enter など）は表の操作として扱わない
+		// Keys pressed during IME composition (such as Enter to confirm a conversion) are not treated as table commands
 		if (event.nativeEvent.isComposing || event.keyCode === 229) return;
 		const mod = event.metaKey || event.ctrlKey;
 		const current = editingRef.current;
@@ -319,7 +344,7 @@ export function CsvEditor({
 		}
 		switch (event.key) {
 			case "Tab":
-				// 端の列ではフォーカスを表の外へ移せるよう、ブラウザの既定の動作に任せる
+				// In the edge column, leave it to the browser default so focus can move out of the table
 				if (event.shiftKey ? anchor.col === 0 : anchor.col === columnCount - 1) return;
 				event.preventDefault();
 				moveActive(event.shiftKey ? "left" : "right");
@@ -371,7 +396,7 @@ export function CsvEditor({
 				focus: { row: rowCount - 1, col: columnCount - 1 },
 			});
 		} else if (key === "c" || key === "x") {
-			// copy イベントは選択文字列が無いと発火しないブラウザがあるため、選択範囲の TSV を textarea に入れて選択しておく
+			// Some browsers do not fire the copy event without selected text, so put the selection's TSV in the textarea and select it
 			const input = event.currentTarget;
 			input.value = editor.getSelectedText();
 			input.select();
@@ -409,7 +434,7 @@ export function CsvEditor({
 	};
 
 	const handleBlur = () => {
-		// ウィンドウ自体がフォーカスを失った時（別アプリへの切り替えなど）は編集を続ける
+		// Keep editing when the window itself loses focus (for example, switching to another app)
 		if (editingRef.current && document.hasFocus()) commitEdit();
 	};
 
@@ -461,6 +486,73 @@ export function CsvEditor({
 		focusInput();
 	};
 
+	const closeMenu = useCallback(() => {
+		setMenu(null);
+		focusInput();
+	}, [focusInput]);
+
+	const handleContextMenu = (event: MouseEvent<HTMLDivElement>) => {
+		const element = event.target as HTMLElement;
+		const cell = element.closest<HTMLElement>("[data-cell]");
+		const rowHeader = element.closest<HTMLElement>("[data-rowheader]");
+		const colHeader = element.closest<HTMLElement>("[data-colheader]");
+		let target: ContextMenuContext["target"];
+		let row = 0;
+		let col = 0;
+		if (cell) {
+			target = "cell";
+			[row, col] = (cell.dataset.cell ?? "").split(":").map(Number) as [number, number];
+		} else if (rowHeader) {
+			target = "row";
+			row = Number(rowHeader.dataset.rowheader);
+		} else if (colHeader) {
+			target = "column";
+			col = Number(colHeader.dataset.colheader);
+		} else {
+			return;
+		}
+
+		if (editingRef.current) commitEdit();
+		const current = toRange(editor.selection);
+		let next: Selection | null = null;
+		if (target === "cell" && !isInRange(current, row, col)) {
+			next = collapsed({ row, col });
+		} else if (target === "row" && (row < current.top || row > current.bottom)) {
+			next = { anchor: { row, col: 0 }, focus: { row, col: columnCount - 1 } };
+		} else if (target === "column" && (col < current.left || col > current.right)) {
+			next = { anchor: { row: 0, col }, focus: { row: rowCount - 1, col } };
+		}
+		if (next) editor.setSelection(next);
+		// A row number is treated as a range spanning all columns, and a column header as one spanning all rows
+		const base = next ? toRange(next) : current;
+		const range =
+			target === "row"
+				? { ...base, left: 0, right: columnCount - 1 }
+				: target === "column"
+					? { ...base, top: 0, bottom: rowCount - 1 }
+					: base;
+
+		const context: ContextMenuContext = {
+			target,
+			row,
+			col,
+			range,
+			clientX: event.clientX,
+			clientY: event.clientY,
+			editor,
+		};
+		onContextMenu?.(context, event);
+		if (event.defaultPrevented) return;
+		if (!contextMenu || readOnly) {
+			setMenu(null);
+			return;
+		}
+		event.preventDefault();
+		const defaults = defaultContextMenuItems(context);
+		const items = typeof contextMenu === "function" ? contextMenu(context, defaults) : defaults;
+		setMenu(items.length > 0 ? { context, items } : null);
+	};
+
 	const handleRowResizeStart = (event: PointerEvent<HTMLDivElement>, rowId: string) => {
 		if (event.button !== 0) return;
 		event.stopPropagation();
@@ -508,6 +600,7 @@ export function CsvEditor({
 			>
 				<div
 					role="rowheader"
+					data-rowheader={rowIndex}
 					className={`tce-rowheader${rowSelected ? " tce-rowheader--selected" : ""}`}
 					onMouseDown={(event) => handleRowHeaderMouseDown(event, rowIndex)}
 					onMouseEnter={() => handleCellMouseEnter(rowIndex, columnCount - 1)}
@@ -517,7 +610,7 @@ export function CsvEditor({
 						className={`tce-row-resizer${resizingRowId === rowId ? " tce-row-resizer--active" : ""}`}
 						onPointerDown={(event) => handleRowResizeStart(event, rowId)}
 						onMouseDown={(event) => {
-							// 行の選択を始めず、表のキー操作を受ける textarea からフォーカスを外さない
+							// Do not start a row selection, and keep focus on the textarea that receives table keyboard input
 							event.preventDefault();
 							event.stopPropagation();
 						}}
@@ -567,6 +660,7 @@ export function CsvEditor({
 					aria-readonly={readOnly}
 					className="tce-grid"
 					style={{ width: totalWidth }}
+					onContextMenu={handleContextMenu}
 				>
 					<div role="row" className="tce-colheaders">
 						<div role="columnheader" className="tce-corner" onMouseDown={handleCornerMouseDown} />
@@ -577,6 +671,7 @@ export function CsvEditor({
 								<div
 									key={header.id}
 									role="columnheader"
+									data-colheader={col}
 									className={`tce-colheader${selected ? " tce-colheader--selected" : ""}`}
 									style={{ width: widths[col] }}
 									onMouseDown={(event) => handleColumnHeaderMouseDown(event, col)}
@@ -586,7 +681,7 @@ export function CsvEditor({
 									<div
 										className={`tce-resizer${header.column.getIsResizing() ? " tce-resizer--active" : ""}`}
 										onMouseDown={(event) => {
-											// 表のキー操作を受ける textarea からフォーカスを外さない
+											// Keep focus on the textarea that receives table keyboard input
 											event.preventDefault();
 											event.stopPropagation();
 											resize(event);
@@ -617,7 +712,7 @@ export function CsvEditor({
 			<textarea
 				ref={inputRef}
 				className={`tce-input${editing ? " tce-input--editing" : ""}`}
-				aria-label="セルの値"
+				aria-label="Cell value"
 				autoComplete="off"
 				autoCorrect="off"
 				spellCheck={false}
@@ -630,6 +725,7 @@ export function CsvEditor({
 				onPaste={handlePaste}
 				onBlur={handleBlur}
 			/>
+			{menu && <ContextMenu items={menu.items} context={menu.context} onClose={closeMenu} />}
 		</div>
 	);
 }

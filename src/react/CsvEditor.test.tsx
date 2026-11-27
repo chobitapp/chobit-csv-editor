@@ -1,11 +1,16 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { CsvEditor } from "./CsvEditor";
+import { CsvEditor, type CsvEditorProps } from "./CsvEditor";
 import { type CsvEditorInstance, useCsvEditor } from "./useCsvEditor";
 
 function Harness({ initialCsv, onEditor }: { initialCsv: string; onEditor: (editor: CsvEditorInstance) => void }) {
 	const editor = useCsvEditor({ initialCsv });
 	onEditor(editor);
 	return <CsvEditor editor={editor} height={300} />;
+}
+
+function MenuHarness(props: Omit<CsvEditorProps, "editor">) {
+	const editor = useCsvEditor({ initialCsv: "a" });
+	return <CsvEditor editor={editor} {...props} />;
 }
 
 function setup(initialCsv: string) {
@@ -18,7 +23,7 @@ function setup(initialCsv: string) {
 			}}
 		/>,
 	);
-	const input = screen.getByLabelText("セルの値") as HTMLTextAreaElement;
+	const input = screen.getByLabelText("Cell value") as HTMLTextAreaElement;
 	const editor = () => latest as unknown as CsvEditorInstance;
 	return { input, editor };
 }
@@ -33,7 +38,7 @@ describe("CsvEditor", () => {
 		vi.restoreAllMocks();
 	});
 
-	it("選択中のセルに直接入力すると上書きで編集が始まり、Enter で確定して下へ移る", () => {
+	it("typing into the selected cell starts editing by overwriting, and Enter commits and moves down", () => {
 		const { input, editor } = setup("a,b\nc,d");
 		type(input, "x");
 		fireEvent.keyDown(input, { key: "Enter" });
@@ -44,7 +49,7 @@ describe("CsvEditor", () => {
 		expect(editor().selection.anchor).toEqual({ row: 1, col: 0 });
 	});
 
-	it("Shift+Enter と Alt+Enter でセル内に改行を入れる", () => {
+	it("Shift+Enter and Alt+Enter insert a line break in the cell", () => {
 		const { input, editor } = setup("a");
 		type(input, "1");
 		fireEvent.keyDown(input, { key: "Enter", shiftKey: true });
@@ -55,7 +60,7 @@ describe("CsvEditor", () => {
 		expect(editor().getCell(0, 0)).toBe("1\n2\n3");
 	});
 
-	it("IME の変換確定の Enter ではセルを確定しない", () => {
+	it("Enter to confirm an IME conversion does not commit the cell", () => {
 		const { input, editor } = setup("a");
 		fireEvent.compositionStart(input);
 		input.value = "日本語";
@@ -66,14 +71,14 @@ describe("CsvEditor", () => {
 		expect(editor().getCell(0, 0)).toBe("日本語");
 	});
 
-	it("Escape で編集を取り消す", () => {
+	it("Escape cancels editing", () => {
 		const { input, editor } = setup("a");
 		type(input, "x");
 		fireEvent.keyDown(input, { key: "Escape" });
 		expect(editor().getCell(0, 0)).toBe("a");
 	});
 
-	it("ペーストした TSV をセルに分割し、足りない行と列を追加する", () => {
+	it("splits pasted TSV into cells and adds missing rows and columns", () => {
 		const { input, editor } = setup("a");
 		fireEvent.paste(input, { clipboardData: { getData: () => "1\t2\n3\t4\n" } });
 		expect(editor().rows).toEqual([
@@ -82,7 +87,7 @@ describe("CsvEditor", () => {
 		]);
 	});
 
-	it("編集中に exportCsv を呼ぶと編集中の値を確定してから出力する", () => {
+	it("exportCsv during editing commits the value being edited before exporting", () => {
 		const { input, editor } = setup("a,b");
 		type(input, "x");
 		let csv = "";
@@ -92,7 +97,7 @@ describe("CsvEditor", () => {
 		expect(csv).toBe("x,b\r\n");
 	});
 
-	it("編集中に load すると編集中の値を捨て、読み込んだ表に書き込まない", async () => {
+	it("load during editing discards the value being edited and does not write it to the loaded table", async () => {
 		const { input, editor } = setup("a");
 		type(input, "x");
 		await act(() => editor().load("b"));
@@ -100,7 +105,7 @@ describe("CsvEditor", () => {
 		expect(editor().rows).toEqual([["b"]]);
 	});
 
-	it("先に呼んだ load が後から終わっても、後から呼んだ load の内容を表示する", async () => {
+	it("shows the content of the later load even if an earlier load finishes after it", async () => {
 		const { editor } = setup("a");
 		let resolveSlow: (value: ArrayBuffer) => void = () => {};
 		const slow = { arrayBuffer: () => new Promise<ArrayBuffer>((resolve) => (resolveSlow = resolve)) } as Blob;
@@ -113,7 +118,7 @@ describe("CsvEditor", () => {
 		expect(editor().rows).toEqual([["new"]]);
 	});
 
-	it("Shift_JIS で表せない文字を含むセルの位置をエラーで返す", () => {
+	it("reports the positions of cells containing characters that cannot be encoded in Shift_JIS in the error", () => {
 		const { editor } = setup("a,😀\n𠮷,b");
 		expect(() => editor().exportBlob({ encoding: "shift_jis" })).toThrow(
 			expect.objectContaining({
@@ -125,13 +130,13 @@ describe("CsvEditor", () => {
 		);
 	});
 
-	it("端の列の Tab はフォーカスを表の外へ移せるよう既定の動作を止めない", () => {
+	it("Tab in the edge column does not prevent the default so focus can move out of the table", () => {
 		const { input } = setup("a,b");
 		expect(fireEvent.keyDown(input, { key: "Tab" })).toBe(false);
 		expect(fireEvent.keyDown(input, { key: "Tab" })).toBe(true);
 	});
 
-	it("編集して元に戻すと未保存の変更が無い状態に戻る", () => {
+	it("editing and then undoing returns to having no unsaved changes", () => {
 		const { input, editor } = setup("a");
 		type(input, "x");
 		fireEvent.keyDown(input, { key: "Enter" });
@@ -141,8 +146,8 @@ describe("CsvEditor", () => {
 		expect(editor().isDirty).toBe(false);
 	});
 
-	it("行番号の下端をドラッグすると行の高さを変え、行を挿入しても同じ行に高さが残り、ダブルクリックで戻る", () => {
-		// jsdom は要素の大きさが 0 になり、仮想スクロールが行を描画しないため
+	it("dragging the bottom edge of a row number resizes the row, the height stays with the same row after inserting rows, and double-click resets it", () => {
+		// jsdom gives elements a size of 0, so virtual scrolling would not render any rows
 		vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(300);
 		vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(800);
 		const { editor } = setup("a\nb");
@@ -163,5 +168,68 @@ describe("CsvEditor", () => {
 		if (!moved) throw new Error("resizer not found");
 		fireEvent.doubleClick(moved);
 		expect(rowOf("b")?.style.height).toBe("");
+	});
+
+	describe("context menu", () => {
+		beforeEach(() => {
+			// jsdom gives elements a size of 0, so virtual scrolling would not render any rows
+			vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockReturnValue(300);
+			vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(800);
+		});
+
+		const cellAt = (row: number, col: number) => document.querySelector(`[data-cell="${row}:${col}"]`) as HTMLElement;
+		// The first columnheader is the top-left corner
+		const colHeader = (col: number) => screen.getAllByRole("columnheader")[col + 1] as HTMLElement;
+
+		it("right-clicking a cell inserts a row below the selected cell", () => {
+			const { editor } = setup("a,b\nc,d");
+			fireEvent.contextMenu(cellAt(0, 1));
+			expect(editor().selection.anchor).toEqual({ row: 0, col: 1 });
+			fireEvent.click(screen.getByText("Insert row below"));
+			expect(editor().rows).toEqual([
+				["a", "b"],
+				["", ""],
+				["c", "d"],
+			]);
+			expect(screen.queryByRole("menu")).toBeNull();
+		});
+
+		it("deletes all columns covered by the column header selection at once", () => {
+			const { editor } = setup("a,b,c\nd,e,f");
+			fireEvent.mouseDown(colHeader(1));
+			fireEvent.mouseEnter(colHeader(2));
+			fireEvent.contextMenu(colHeader(1));
+			fireEvent.click(screen.getByText("Delete 2 columns"));
+			expect(editor().rows).toEqual([["a"], ["d"]]);
+		});
+
+		it("calling preventDefault in onContextMenu suppresses the menu", () => {
+			const onContextMenu = vi.fn((_context, event: { preventDefault: () => void }) => event.preventDefault());
+			render(<MenuHarness onContextMenu={onContextMenu} />);
+			fireEvent.contextMenu(cellAt(0, 0));
+			expect(onContextMenu).toHaveBeenCalledWith(
+				expect.objectContaining({ target: "cell", row: 0, col: 0 }),
+				expect.anything(),
+			);
+			expect(screen.queryByRole("menu")).toBeNull();
+		});
+
+		it("does not show the menu when read-only", () => {
+			render(<MenuHarness readOnly />);
+			fireEvent.contextMenu(cellAt(0, 0));
+			expect(screen.queryByRole("menu")).toBeNull();
+		});
+
+		it("items can be replaced with a function, and Esc closes the menu", () => {
+			render(
+				<MenuHarness
+					contextMenu={(_context, items) => [...items.slice(0, 1), { id: "x", label: "Custom", onSelect: () => {} }]}
+				/>,
+			);
+			fireEvent.contextMenu(cellAt(0, 0));
+			expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual(["Insert row above", "Custom"]);
+			fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
+			expect(screen.queryByRole("menu")).toBeNull();
+		});
 	});
 });

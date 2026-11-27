@@ -27,6 +27,13 @@ export {
 } from "./core/encoding";
 export type { CellPosition, CellRange, Selection } from "./core/selection";
 export {
+	type ContextMenuContext,
+	type ContextMenuItem,
+	type ContextMenuOption,
+	type ContextMenuTarget,
+	defaultContextMenuItems,
+} from "./react/ContextMenu";
+export {
 	CsvEditor,
 	type CsvEditorProps,
 	defaultColumnLabel,
