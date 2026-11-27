@@ -6,6 +6,8 @@
 
 A spreadsheet-like CSV editor component for React, built on TanStack Table.
 
+**[Live demo](https://chobit-csv-editor-demo.zaru.workers.dev)**
+
 - **IME-friendly.** Pressing Enter to confirm an IME composition (Japanese, Chinese, Korean, …) never commits the cell.
 - **Multi-line cells.** Insert a line break inside a cell with Alt+Enter or Shift+Enter.
 - **Paste from spreadsheets.** Tables copied from Excel or Google Sheets are split across cells. Text containing a tab or a line break is split as TSV; anything else goes into a single cell.
@@ -182,7 +184,7 @@ pnpm validate   # Lint, typecheck, and test, then check the published contents w
 
 ### Deploying the demo
 
-The demo app in [`demo/`](demo) is deployed to Cloudflare Workers as static assets with the [`cf` CLI](https://github.com/cloudflare/cf), which is installed as a dev dependency. The Worker is configured in [`demo/cloudflare.config.ts`](demo/cloudflare.config.ts).
+The demo app in [`demo/`](demo) is deployed to [Cloudflare Workers](https://chobit-csv-editor-demo.zaru.workers.dev) as static assets with the [`cf` CLI](https://github.com/cloudflare/cf), which is installed as a dev dependency. The Worker is configured in [`demo/cloudflare.config.ts`](demo/cloudflare.config.ts).
 
 ```sh
 pnpm exec cf auth login   # First time only
