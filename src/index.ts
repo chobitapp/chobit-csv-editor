@@ -38,6 +38,7 @@ export {
 	type CsvEditorProps,
 	defaultColumnLabel,
 } from "./react/CsvEditor";
+export type { CsvEditorLocale } from "./react/locale";
 export {
 	type CsvEditorInstance,
 	type ExportBlobOptions,

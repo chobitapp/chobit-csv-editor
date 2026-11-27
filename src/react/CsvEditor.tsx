@@ -36,6 +36,7 @@ import {
 	type ContextMenuOption,
 	defaultContextMenuItems,
 } from "./ContextMenu";
+import { type CsvEditorLocale, messages, useBrowserLocale } from "./locale";
 import type { CsvEditorInstance } from "./useCsvEditor";
 
 type GridRow = readonly string[];
@@ -73,6 +74,11 @@ export interface CsvEditorProps {
 	contextMenu?: ContextMenuOption;
 	/** Called when a cell, row number, or column header is right-clicked. Calling preventDefault() suppresses the menu */
 	onContextMenu?: (context: ContextMenuContext, event: MouseEvent) => void;
+	/**
+	 * Language of the context menu and the cell editor's aria-label. Defaults to the first of "en" and "ja" found in the
+	 * browser's language preferences, or "en" if neither is found
+	 */
+	locale?: CsvEditorLocale;
 }
 
 type EditMode = "type" | "edit";
@@ -114,7 +120,10 @@ export function CsvEditor({
 	columnLabel = defaultColumnLabel,
 	contextMenu = true,
 	onContextMenu,
+	locale: localeProp,
 }: CsvEditorProps) {
+	const browserLocale = useBrowserLocale();
+	const locale = localeProp ?? browserLocale;
 	const rootRef = useRef<HTMLDivElement>(null);
 	const cornerRef = useRef<HTMLDivElement>(null);
 	const scrollRef = useRef<HTMLDivElement>(null);
@@ -550,6 +559,7 @@ export function CsvEditor({
 			clientX: event.clientX,
 			clientY: event.clientY,
 			editor,
+			locale,
 		};
 		onContextMenu?.(context, event);
 		if (event.defaultPrevented) return;
@@ -722,7 +732,7 @@ export function CsvEditor({
 			<textarea
 				ref={inputRef}
 				className={`tce-input${editing ? " tce-input--editing" : ""}`}
-				aria-label="Cell value"
+				aria-label={messages[locale].cellValue}
 				autoComplete="off"
 				autoCorrect="off"
 				spellCheck={false}

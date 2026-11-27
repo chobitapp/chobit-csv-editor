@@ -131,6 +131,7 @@ When saving as Shift_JIS, symbols that map differently on Windows and macOS, suc
 | `columnLabel`                           | `(index) => ReactNode`                        | A, B, …, Z, AA, …                           |
 | `contextMenu`                           | `boolean \| (context, defaultItems) => items` | `true`                                      |
 | `onContextMenu`                         | `(context, event) => void`                    | —                                           |
+| `locale`                                | `"en" \| "ja"`                                | Browser's language, or `"en"`               |
 | `className` / `style`                   |                                               |                                             |
 
 ### Context menu
@@ -139,7 +140,8 @@ Right-clicking a cell, row number, or column header opens a menu to insert and d
 
 - `contextMenu={false}` disables the menu.
 - `contextMenu={(context, defaultItems) => items}` lets you add, remove, or replace items. An item is `{ id, label, disabled?, onSelect(context) }` or `{ type: "separator" }`.
-- `onContextMenu(context, event)` is called on every right-click. Call `event.preventDefault()` to suppress the default menu and show your own. `context` is `{ target: "cell" | "row" | "column", row, col, range, clientX, clientY, editor }`, and you can call the `editor` methods directly.
+- `onContextMenu(context, event)` is called on every right-click. Call `event.preventDefault()` to suppress the default menu and show your own. `context` is `{ target: "cell" | "row" | "column", row, col, range, clientX, clientY, editor, locale }`, and you can call the `editor` methods directly.
+- The labels are in English or Japanese. By default the first of the two found in the browser's language preferences (`navigator.languages`) is used, falling back to English, and the labels follow changes to that setting. Pass `locale="en"` or `locale="ja"` to fix the language. `locale` also sets the language of the cell editor's `aria-label`. During server-side rendering the default is English, and it switches to the browser's language after hydration.
 
 ```tsx
 <CsvEditor

@@ -253,5 +253,46 @@ describe("CsvEditor", () => {
 			fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" });
 			expect(screen.queryByRole("menu")).toBeNull();
 		});
+
+		const menuLabels = () => screen.getAllByRole("menuitem").map((item) => item.textContent);
+
+		it("follows the browser's language by default", () => {
+			vi.spyOn(navigator, "languages", "get").mockReturnValue(["ja-JP", "en-US"]);
+			render(<MenuHarness />);
+			expect(screen.getByLabelText("セルの値")).toBeTruthy();
+			fireEvent.contextMenu(cellAt(0, 0));
+			expect(menuLabels()).toEqual([
+				"上に行を挿入",
+				"下に行を挿入",
+				"行を削除",
+				"左に列を挿入",
+				"右に列を挿入",
+				"列を削除",
+			]);
+		});
+
+		it("switches when the browser's language changes", () => {
+			const languages = vi.spyOn(navigator, "languages", "get").mockReturnValue(["en-US"]);
+			render(<MenuHarness />);
+			languages.mockReturnValue(["ja"]);
+			act(() => {
+				window.dispatchEvent(new Event("languagechange"));
+			});
+			expect(screen.getByLabelText("セルの値")).toBeTruthy();
+		});
+
+		it("the locale prop overrides the browser's language", () => {
+			vi.spyOn(navigator, "languages", "get").mockReturnValue(["ja-JP"]);
+			render(<MenuHarness locale="en" />);
+			fireEvent.contextMenu(cellAt(0, 0));
+			expect(menuLabels()[0]).toBe("Insert row above");
+		});
+
+		it("passes the locale to a contextMenu function", () => {
+			const contextMenu = vi.fn((_context, items) => items);
+			render(<MenuHarness locale="ja" contextMenu={contextMenu} />);
+			fireEvent.contextMenu(cellAt(0, 0));
+			expect(contextMenu).toHaveBeenCalledWith(expect.objectContaining({ locale: "ja" }), expect.anything());
+		});
 	});
 });

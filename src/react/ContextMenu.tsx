@@ -1,5 +1,6 @@
 import { type KeyboardEvent, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { CellRange } from "../core/selection";
+import { type CsvEditorLocale, messages } from "./locale";
 import type { CsvEditorInstance } from "./useCsvEditor";
 
 export type ContextMenuTarget = "cell" | "row" | "column";
@@ -15,6 +16,8 @@ export interface ContextMenuContext {
 	clientX: number;
 	clientY: number;
 	editor: CsvEditorInstance;
+	/** Language of the menu labels */
+	locale: CsvEditorLocale;
 }
 
 export type ContextMenuItem =
@@ -32,41 +35,42 @@ export type ContextMenuOption =
 
 export function defaultContextMenuItems(context: ContextMenuContext): ContextMenuItem[] {
 	const { target, range, editor } = context;
+	const m = messages[context.locale];
 	const rowCount = range.bottom - range.top + 1;
 	const colCount = range.right - range.left + 1;
 	const rowItems: ContextMenuItem[] = [
 		{
 			id: "insert-row-above",
-			label: "Insert row above",
+			label: m.insertRowAbove,
 			// Do not insert above the header row
 			disabled: editor.hasHeader && range.top === 0,
 			onSelect: () => editor.insertRows(range.top),
 		},
 		{
 			id: "insert-row-below",
-			label: "Insert row below",
+			label: m.insertRowBelow,
 			onSelect: () => editor.insertRows(range.bottom + 1),
 		},
 		{
 			id: "delete-rows",
-			label: rowCount === 1 ? "Delete row" : `Delete ${rowCount} rows`,
+			label: m.deleteRows(rowCount),
 			onSelect: () => editor.deleteRows(range.top, rowCount),
 		},
 	];
 	const columnItems: ContextMenuItem[] = [
 		{
 			id: "insert-column-left",
-			label: "Insert column left",
+			label: m.insertColumnLeft,
 			onSelect: () => editor.insertColumns(range.left),
 		},
 		{
 			id: "insert-column-right",
-			label: "Insert column right",
+			label: m.insertColumnRight,
 			onSelect: () => editor.insertColumns(range.right + 1),
 		},
 		{
 			id: "delete-columns",
-			label: colCount === 1 ? "Delete column" : `Delete ${colCount} columns`,
+			label: m.deleteColumns(colCount),
 			onSelect: () => editor.deleteColumns(range.left, colCount),
 		},
 	];
