@@ -1,5 +1,5 @@
 {
-	"name": "@zaru/react-csv-editor",
+	"name": "chobit-csv-editor",
 	"version": "0.1.0",
 	"description": "TanStack Table ベースのスプレッドシート風 CSV エディタ (React)",
 	"keywords": [
@@ -10,13 +10,13 @@
 		"tanstack-table",
 		"shift_jis"
 	],
-	"homepage": "https://github.com/zaru/react-csv-editor#readme",
+	"homepage": "https://github.com/zaru/chobit-csv-editor#readme",
 	"bugs": {
-		"url": "https://github.com/zaru/react-csv-editor/issues"
+		"url": "https://github.com/zaru/chobit-csv-editor/issues"
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/zaru/react-csv-editor.git"
+		"url": "git+https://github.com/zaru/chobit-csv-editor.git"
 	},
 	"license": "MIT",
 	"author": "zaru",
@@ -41,7 +41,6 @@
 		"**/*.css"
 	],
 	"publishConfig": {
-		"access": "public",
 		"registry": "https://registry.npmjs.org/"
 	},
 	"packageManager": "pnpm@12.23.0",

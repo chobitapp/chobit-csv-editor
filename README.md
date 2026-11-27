@@ -1,4 +1,4 @@
-# @zaru/react-csv-editor
+# chobit-csv-editor
 
 [TanStack Table](https://tanstack.com/table) を使った、React 向けのスプレッドシート風 CSV エディタです。
 CSV の文字列やファイルを渡すと、ブラウザ上で表として編集できます。
@@ -15,7 +15,7 @@ CSV の文字列やファイルを渡すと、ブラウザ上で表として編�
 ## インストール
 
 ```sh
-pnpm add @zaru/react-csv-editor
+pnpm add chobit-csv-editor
 ```
 
 React 18 以降が必要です。
@@ -23,8 +23,8 @@ React 18 以降が必要です。
 ## 使い方
 
 ```tsx
-import { CsvEditor, useCsvEditor } from "@zaru/react-csv-editor";
-import "@zaru/react-csv-editor/styles.css";
+import { CsvEditor, useCsvEditor } from "chobit-csv-editor";
+import "chobit-csv-editor/styles.css";
 
 export function Page({ csv }: { csv: string }) {
 	const editor = useCsvEditor({ initialCsv: csv, initialHasHeader: true });
