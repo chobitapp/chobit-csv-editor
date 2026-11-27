@@ -10,13 +10,13 @@
 		"tanstack-table",
 		"shift_jis"
 	],
-	"homepage": "https://github.com/zaru/chobit-csv-editor#readme",
+	"homepage": "https://github.com/chobitapp/chobit-csv-editor#readme",
 	"bugs": {
-		"url": "https://github.com/zaru/chobit-csv-editor/issues"
+		"url": "https://github.com/chobitapp/chobit-csv-editor/issues"
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/zaru/chobit-csv-editor.git"
+		"url": "git+https://github.com/chobitapp/chobit-csv-editor.git"
 	},
 	"license": "MIT",
 	"author": "zaru",
