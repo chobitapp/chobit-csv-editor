@@ -193,6 +193,10 @@ pnpm deploy:demo          # Build the demo and deploy it
 
 `pnpm preview:demo` builds the demo and serves it locally in the Workers runtime. The demo is deployed by a maintainer from their machine, not from GitHub Actions.
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) or [GitHub Releases](https://github.com/chobitapp/chobit-csv-editor/releases).
+
 ## Contributing
 
 Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for details.

@@ -31,7 +31,7 @@ The library source is in `src/` (`src/core/` for framework-independent logic, `s
 
 1. Fork the repository and create a branch from `main`.
 2. Make your change, and add or update tests in the `*.test.ts(x)` files next to the code.
-3. If you change the public API or behavior, update `README.md`.
+3. If you change the public API or behavior, update `README.md`. Add a line for user-visible changes under `## [Unreleased]` in `CHANGELOG.md`.
 4. Run the full check before opening a pull request:
 
    ```sh
@@ -45,23 +45,18 @@ Please keep pull requests focused on one change. For larger changes, opening an 
 
 ## Releasing (maintainers)
 
-Releases are published from a maintainer's machine, not from GitHub Actions, so no publishing credentials are stored on GitHub.
+Releases are published from a maintainer's machine, not from GitHub Actions, so no publishing credentials are stored on GitHub. The release notes on [GitHub Releases](https://github.com/chobitapp/chobit-csv-editor/releases) come from [CHANGELOG.md](CHANGELOG.md).
 
-1. Bump `version` in `package.json`, commit, and push `main`.
-2. Publish to npm. `prepublishOnly` runs `pnpm validate` first, and pnpm refuses to publish from a dirty tree or a branch other than `main`:
-
-   ```sh
-   pnpm publish
-   ```
-
-3. Tag the release and create the GitHub Release:
+1. Rename the `## [Unreleased]` section of `CHANGELOG.md` to `## [X.Y.Z] - YYYY-MM-DD` and add a new empty `## [Unreleased]` above it. Write the entries for users of the library: what changed for them, and what they need to do when upgrading.
+2. Bump `version` in `package.json` to `X.Y.Z`, commit, and push `main`.
+3. Check, then release:
 
    ```sh
-   git tag vX.Y.Z
-   git push origin vX.Y.Z
-   gh release create vX.Y.Z --verify-tag --generate-notes --title vX.Y.Z
+   pnpm release -- --dry-run   # Runs the checks and prints the release notes
+   pnpm release
    ```
 
+   `pnpm release` refuses to run unless `CHANGELOG.md` has a non-empty section for the version, the working tree is clean, and `main` matches `origin/main`. It then publishes to npm (`prepublishOnly` runs `pnpm validate` first), pushes the `vX.Y.Z` tag, and creates the GitHub Release with that section as its notes. Prerelease versions (`X.Y.Z-beta.N`) are published under the npm `next` tag and marked as prereleases on GitHub. If a step fails, fix the cause and run `pnpm release` again; steps already done are skipped. To fix the notes of a published release, edit `CHANGELOG.md` and run `pnpm release` again: it updates the existing GitHub Release.
 4. Deploy the demo with `pnpm deploy:demo` (see [Deploying the demo](README.md#deploying-the-demo)).
 
 ## Code of conduct

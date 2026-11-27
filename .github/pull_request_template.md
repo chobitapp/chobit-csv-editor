@@ -7,3 +7,4 @@
 - [ ] `pnpm validate` passes
 - [ ] Tests are added or updated for the change
 - [ ] `README.md` is updated if the public API or behavior changed
+- [ ] `CHANGELOG.md` has an entry under `Unreleased` for user-visible changes
