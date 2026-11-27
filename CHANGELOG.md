@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-27
+
 ### Added
 
 - Right-click context menu on cells, row numbers, and column headers to insert and delete rows and columns. Customize it with the `contextMenu` prop, or replace it through `onContextMenu`. `defaultContextMenuItems` and the `ContextMenu*` types are exported.
